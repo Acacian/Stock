@@ -1,0 +1,3 @@
+rootProject.name = 'Stock'
+include 'authentication'
+include 'user_service'
