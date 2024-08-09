@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import stock.authentication.model.User;
-import stock.user.dto.UpdateProfileRequest;
-import stock.user.service.UserService;
+import stock.user_service.dto.UpdateProfileRequest;  
+import stock.user_service.service.UserService; 
 
 @RestController
 @RequestMapping("/api/users")

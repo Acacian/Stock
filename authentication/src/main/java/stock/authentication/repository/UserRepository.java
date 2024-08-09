@@ -1,10 +1,10 @@
-package main.java.stock.authentication.repository;
+package stock.authentication.repository;
 
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import main.java.stock.authentication.model.User;
+import stock.authentication.model.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);

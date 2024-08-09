@@ -1,12 +1,12 @@
-package main.java.stock.user_service.service;
+package stock.user_service.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import main.java.stock.authentication.model.User;
-import main.java.stock.authentication.repository.UserRepository;
-import stock.user.dto.UpdateProfileRequest;
+import stock.authentication.model.User;
+import stock.authentication.repository.UserRepository;
+import stock.user_service.dto.UpdateProfileRequest;
 
 @Service
 public class UserService {

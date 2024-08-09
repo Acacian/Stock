@@ -49,8 +49,8 @@ services:
 
   auth-service:
     build:
-      context: ./authentication
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: authentication/Dockerfile
     container_name: auth-service
     ports:
       - "8082:8082"
@@ -64,24 +64,33 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_password}
       - SPRING_REDIS_HOST=redis
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9093
+      - SERVERS=db
+      - KAFKA_SERVERS=kafka
+      - REDIS_HOST=redis
+      - JWT_SECRET=${JWT_SECRET}
+      - EMAIL=${EMAIL}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
     networks:
       - my-network
 
   user-service:
     build:
-      context: ./user_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: user_service/Dockerfile
     container_name: user-service
     ports:
       - "8081:8081"
     depends_on:
       - db
       - kafka
+      - auth-service
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${DB_password}
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9093
+      - SERVERS=db
+      - KAFKA_SERVERS=kafka
     networks:
       - my-network
 
