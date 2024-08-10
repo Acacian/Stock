@@ -1,2 +1,2 @@
 rootProject.name = 'Stock'
-include 'authentication', 'user_service'
+include 'common', 'authentication', 'user_service'

@@ -20,6 +20,7 @@ public class User {
     private String introduction;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime lastLoginAt;
 
     @PrePersist
     protected void onCreate() {

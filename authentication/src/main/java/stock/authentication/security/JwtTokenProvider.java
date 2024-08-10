@@ -18,10 +18,10 @@ public class JwtTokenProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    @Value("${app.jwtSecret}")
+    @Value("${app.jwt.secret}")
     private String jwtSecret;
-
-    @Value("${app.jwtExpirationInMs}")
+    
+    @Value("${app.jwt.expirationInMs}")
     private int jwtExpirationInMs;
 
     private Key getSigningKey() {

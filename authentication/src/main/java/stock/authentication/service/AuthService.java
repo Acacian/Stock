@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import stock.authentication.model.User;
 import stock.authentication.repository.UserRepository;
 import stock.authentication.security.JwtTokenProvider;
+import stock.common.event.UserEvent;
 
 @Service
 public class AuthService {
@@ -34,7 +35,7 @@ public class AuthService {
     private JwtTokenProvider tokenProvider;
 
     @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private KafkaTemplate<String, UserEvent> kafkaTemplate;
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
@@ -50,7 +51,7 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         // Send verification email
-        kafkaTemplate.send("email-topic", "VERIFICATION", user.getEmail());
+        kafkaTemplate.send("email-topic", new UserEvent("VERIFICATION", savedUser.getId(), savedUser.getEmail()));
         logger.info("Verification email sent to: {}", user.getEmail());
 
         return savedUser;
@@ -63,6 +64,8 @@ public class AuthService {
         );
 
         String token = tokenProvider.generateToken(authentication);
+        User user = (User) authentication.getPrincipal();
+        kafkaTemplate.send("user-events", new UserEvent("USER_AUTHENTICATED", user.getId(), user.getEmail()));
         logger.info("User authenticated successfully: {}", email);
         return token;
     }
@@ -93,6 +96,7 @@ public class AuthService {
         // Logout from all devices
         String userTokenKey = "user_tokens:" + userId;
         redisTemplate.delete(userTokenKey);
+        kafkaTemplate.send("user-events", new UserEvent("PASSWORD_UPDATED", userId, null));
         logger.info("Password updated and logged out from all devices for user ID: {}", userId);
     }
 }
