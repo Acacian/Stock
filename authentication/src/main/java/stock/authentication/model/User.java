@@ -3,7 +3,6 @@ package stock.authentication.model;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
-
 import lombok.Data;
 
 @Data
@@ -28,7 +27,7 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String introduction;
 
-    private boolean emailVerified = false;
+    private boolean enabled = false;
 
     private LocalDateTime createdAt;
 

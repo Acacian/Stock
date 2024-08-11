@@ -3,7 +3,6 @@ package stock.authentication.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import stock.authentication.model.User;
 import stock.authentication.service.AuthService;
 import stock.authentication.dto.LoginRequest;
@@ -38,5 +37,11 @@ public class AuthController {
     public ResponseEntity<?> updatePassword(@RequestBody UpdatePasswordRequest request) {
         authService.updatePassword(request.getUserId(), request.getOldPassword(), request.getNewPassword());
         return ResponseEntity.ok("Password updated successfully");
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<?> verifyUser(@RequestParam String token) {
+        authService.verifyUser(token);
+        return ResponseEntity.ok("Email verified successfully");
     }
 }

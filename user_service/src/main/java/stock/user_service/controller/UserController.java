@@ -3,7 +3,6 @@ package stock.user_service.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import stock.user_service.model.User;
 import stock.user_service.dto.UpdateProfileRequest;  
 import stock.user_service.service.UserService; 

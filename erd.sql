@@ -21,17 +21,6 @@ CREATE TABLE posts (
   FOREIGN KEY (user_id) REFERENCES users(id)
 ) COMMENT '포스트';
 
--- 뉴스피드 테이블
-CREATE TABLE newsfeeds (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  user_id INT NOT NULL,
-  post_id INT NOT NULL,
-  activity_type ENUM('POST', 'COMMENT', 'LIKE', 'FOLLOW') NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id),
-  FOREIGN KEY (post_id) REFERENCES posts(id)
-) COMMENT '뉴스피드';
-
 -- 댓글 테이블
 CREATE TABLE comments (
   id INT PRIMARY KEY AUTO_INCREMENT,

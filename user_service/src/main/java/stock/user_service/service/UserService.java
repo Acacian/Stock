@@ -23,18 +23,6 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // @Autowired
-    // private PostRepository postRepository;
-
-    // @Autowired
-    // private CommentRepository commentRepository;
-
-    // @Autowired
-    // private FollowRepository followRepository;
-
-    // @Autowired
-    // private LikeRepository likeRepository;
-
     @Autowired
     private KafkaTemplate<String, UserEvent> kafkaTemplate;
 

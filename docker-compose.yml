@@ -58,18 +58,8 @@ services:
       - db
       - redis
       - kafka
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-      - SPRING_REDIS_HOST=redis
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9093
-      - SERVERS=db
-      - KAFKA_SERVERS=kafka
-      - REDIS_HOST=redis
-      - JWT_SECRET=${JWT_SECRET}
-      - EMAIL=${EMAIL}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+    env_file:
+      - .env
     networks:
       - my-network
 
@@ -83,14 +73,38 @@ services:
     depends_on:
       - db
       - kafka
-      - auth-service
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9093
-      - SERVERS=db
-      - KAFKA_SERVERS=kafka
+    env_file:
+      - .env
+    networks:
+      - my-network
+
+  newsfeed-service:
+    build:
+      context: .
+      dockerfile: newsfeed_service/Dockerfile
+    container_name: newsfeed-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - db
+      - kafka
+    env_file:
+      - .env
+    networks:
+      - my-network
+
+  social-service:
+    build:
+      context: .
+      dockerfile: social_service/Dockerfile
+    container_name: social-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - db
+      - kafka
+    env_file:
+      - .env
     networks:
       - my-network
 
