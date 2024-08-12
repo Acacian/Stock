@@ -30,10 +30,18 @@ subprojects {
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testImplementation 'org.junit.jupiter:junit-jupiter-api'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+        testImplementation 'org.springframework.kafka:spring-kafka-test'
+        testImplementation 'org.awaitility:awaitility:4.2.0'
     }
 
     test {
         useJUnitPlatform()
+    }
+
+    task integrationTest(type: Test) {
+    useJUnitPlatform()
+    include '**/IntegrationTest*'
+    systemProperty 'spring.profiles.active', 'test'
     }
 }
 
