@@ -1,20 +1,12 @@
 dependencies {
-    implementation project(':common')
     implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'redis.clients:jedis'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'io.github.cdimascio:dotenv-java:2.3.2'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     implementation 'com.fasterxml.uuid:java-uuid-generator:4.0.1'
     implementation 'com.github.f4b6a3:uuid-creator:5.1.0'
-}
-
-test {
-    useJUnitPlatform()
+    
+    testImplementation 'org.springframework.security:spring-security-test'
 }

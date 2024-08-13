@@ -9,7 +9,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import stock.user_service.model.User;
 import stock.user_service.repository.UserRepository;
 import stock.user_service.dto.UpdateProfileRequest;
-import stock.common.event.UserEvent;
+import stock.user_service.kafka.UserEvent;
 
 import java.time.LocalDateTime;
 import java.util.Optional;

@@ -18,7 +18,7 @@ public class EmailService {
     @Value("${full.mail.address}")
     private String fromEmail;
 
-    @Value("${app.domain}")
+    @Value("${app.domain:localhost}")
     private String appDomain;
 
     public void sendVerificationEmail(String toEmail, String token) {

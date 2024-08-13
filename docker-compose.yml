@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    privileged: true
+    user: root
+    ports:
+      - 8010:8010
+      - 50000:50000
+    container_name: jenkins
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - my-network
+
   db:
     image: mysql:8.0.39
     container_name: mysql-db
@@ -52,6 +68,9 @@ services:
       context: .
       dockerfile: authentication/Dockerfile
     container_name: auth-service
+    environment:
+      - EMAIL=${TEST_EMAIL}
+      - FULL_MAIL_ADDRESS=${TEST_EMAIL}
     ports:
       - "8082:8082"
     depends_on:
@@ -108,8 +127,28 @@ services:
     networks:
       - my-network
 
+  integration-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: integration-test
+    depends_on:
+      - auth-service
+      - user-service
+      - newsfeed-service
+      - social-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+    networks:
+      - my-network
+    command: ["./gradlew", "integrationTest"]
+
 volumes:
   mysql-data:
+  jenkins_home:
 
 networks:
   my-network:

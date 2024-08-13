@@ -19,7 +19,7 @@ import stock.authentication.exception.GlobalExceptionHandler.InvalidTokenExcepti
 import stock.authentication.model.User;
 import stock.authentication.repository.UserRepository;
 import stock.authentication.security.JwtTokenProvider;
-import stock.common.event.UserEvent;
+import stock.authentication.kafka.UserEvent;
 
 @Service
 public class AuthService {

@@ -1,26 +1,35 @@
 package stock.authentication.service;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import stock.authentication.model.User;
-import stock.authentication.repository.UserRepository;
-import stock.authentication.security.JwtTokenProvider;
-import stock.authentication.exception.GlobalExceptionHandler.EmailAlreadyExistsException;
-import stock.authentication.exception.GlobalExceptionHandler.InvalidTokenException;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import stock.authentication.exception.GlobalExceptionHandler.EmailAlreadyExistsException;
+import stock.authentication.exception.GlobalExceptionHandler.InvalidTokenException;
+import stock.authentication.model.User;
+import stock.authentication.repository.UserRepository;
+import stock.authentication.security.JwtTokenProvider;
+
+@ExtendWith(SpringExtension.class)
+@SpringBootTest
+@ActiveProfiles("test")
 class AuthServiceTest {
 
     @InjectMocks
@@ -28,16 +37,22 @@ class AuthServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
     @Mock
     private PasswordEncoder passwordEncoder;
+
     @Mock
     private AuthenticationManager authenticationManager;
+
     @Mock
     private JwtTokenProvider tokenProvider;
+
     @Mock
     private RedisTemplate<String, String> redisTemplate;
+
     @Mock
     private ValueOperations<String, String> valueOperations;
+
     @Mock
     private EmailService emailService;
 
@@ -56,6 +71,7 @@ class AuthServiceTest {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(user);
+        doNothing().when(emailService).sendVerificationEmail(anyString(), anyString());
 
         User result = authService.registerUser(user);
 

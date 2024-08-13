@@ -1,0 +1,9 @@
+FROM gradle:7.6-jdk17
+
+WORKDIR /app
+
+COPY . .
+
+RUN chmod +x gradlew
+
+CMD ["./gradlew", "integrationTest", "--info"]

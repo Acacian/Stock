@@ -5,4 +5,5 @@ import stock.social_service.model.Follow;
 
 public interface FollowRepository extends JpaRepository<Follow, Long> {
     boolean existsByFollowerIdAndFollowedId(Long followerId, Long followedId);
+    void deleteByFollowerIdAndFollowedId(Long followerId, Long followedId);
 }

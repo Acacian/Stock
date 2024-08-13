@@ -1,18 +1,46 @@
 version: '3.8'
 
 services:
+  integration-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock_Test
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${TEST_DB_PASSWORD}
+    depends_on:
+      - db
+      - auth-service
+      - user-service
+      - newsfeed-service
+      - social-service
+    networks:
+      - my-network
+    command: ["./gradlew", "integrationTest", "--info"]
+
   db:
     image: mysql:8.0.39
     environment:
       MYSQL_ROOT_PASSWORD: ${TEST_DB_PASSWORD}
       MYSQL_DATABASE: Stock_Test
     ports:
-      - "3307:3306"
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - my-network
 
   redis:
     image: redis:6.2
     ports:
       - "6380:6379"
+    networks:
+      - my-network
 
   kafka:
     image: wurstmeister/kafka:2.13-2.8.1
@@ -26,47 +54,88 @@ services:
       - "9093:9093"
     depends_on:
       - zookeeper
+    networks:
+      - my-network
 
   zookeeper:
     image: zookeeper:3.7.0
+    networks:
+      - my-network
 
   auth-service:
     build:
       context: .
       dockerfile: authentication/Dockerfile
+    working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=test
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock_Test
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${TEST_DB_PASSWORD}
+      - FULL_MAIL_ADDRESS=${TEST_EMAIL}
     depends_on:
-      - db
-      - redis
-      - kafka
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - my-network
+    command: ["java", "-jar", "-Dspring.profiles.active=test", "app.jar"]
 
   user-service:
     build:
       context: .
       dockerfile: user_service/Dockerfile
+    working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=test
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock_Test
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${TEST_DB_PASSWORD}
     depends_on:
-      - db
-      - kafka
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - my-network
+    command: ["java", "-jar", "-Dspring.profiles.active=test", "app.jar"]
 
   newsfeed-service:
     build:
       context: .
       dockerfile: newsfeed_service/Dockerfile
-    environment:
-      - SPRING_PROFILES_ACTIVE=test
+    working_dir: /app
     depends_on:
-      - db
-      - kafka
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - my-network
+    command: ["java", "-jar", "-Dspring.profiles.active=test", "app.jar"]
 
   social-service:
     build:
       context: .
       dockerfile: social_service/Dockerfile
+    working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=test
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock_Test
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${TEST_DB_PASSWORD}
     depends_on:
-      - db
-      - kafka
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - my-network
+    command: ["java", "-jar", "-Dspring.profiles.active=test", "app.jar"]
+
+networks:
+  my-network:
+    driver: bridge

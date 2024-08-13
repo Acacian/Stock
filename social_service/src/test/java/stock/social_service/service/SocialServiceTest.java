@@ -1,104 +1,153 @@
-package stock.social_service;
+package stock.social_service.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.test.context.EmbeddedKafka;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import stock.social_service.model.Post;
 import stock.social_service.model.Comment;
 import stock.social_service.repository.PostRepository;
 import stock.social_service.repository.CommentRepository;
 import stock.social_service.repository.FollowRepository;
 
+import java.util.Optional;
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
-import static org.awaitility.Awaitility.await;
-import java.util.concurrent.TimeUnit;
-import java.util.Map;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
-@DirtiesContext
-class SocialServiceIntegrationTest {
+@SpringBootTest
+class SocialServiceTest {
 
     @Autowired
-    private TestRestTemplate restTemplate;
+    private SocialService socialService;
 
-    @Autowired
+    @MockBean
     private PostRepository postRepository;
 
-    @Autowired
+    @MockBean
     private CommentRepository commentRepository;
 
-    @Autowired
+    @MockBean
     private FollowRepository followRepository;
 
     @BeforeEach
     void setup() {
-        postRepository.deleteAll();
-        commentRepository.deleteAll();
-        followRepository.deleteAll();
+        // Setup mock behavior if needed
     }
 
     @Test
-    void testCreatePostAndComment() {
-        // Create a post
-        HttpEntity<Map<String, Object>> postRequest = new HttpEntity<>(Map.of(
-            "userId", 1L,
-            "content", "Test post"
-        ));
-        ResponseEntity<Post> postResponse = restTemplate.postForEntity("/api/social/posts", postRequest, Post.class);
-        assertEquals(200, postResponse.getStatusCodeValue());
-        assertNotNull(postResponse.getBody());
-        Long postId = postResponse.getBody().getId();
+    void testCreatePost() {
+        Post post = new Post();
+        post.setUserId(1L);
+        post.setContent("Test post");
 
-        // Add a comment to the post
-        HttpEntity<Map<String, Object>> commentRequest = new HttpEntity<>(Map.of(
-            "userId", 2L,
-            "content", "Test comment"
-        ));
-        ResponseEntity<Comment> commentResponse = restTemplate.postForEntity("/api/social/posts/" + postId + "/comments", commentRequest, Comment.class);
-        assertEquals(200, commentResponse.getStatusCodeValue());
-        assertNotNull(commentResponse.getBody());
+        when(postRepository.save(any(Post.class))).thenReturn(post);
 
-        // Verify the comment was added
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            ResponseEntity<Post> getPostResponse = restTemplate.getForEntity("/api/social/posts/user/1", Post[].class);
-            assertEquals(200, getPostResponse.getStatusCodeValue());
-            Post[] posts = getPostResponse.getBody();
-            assertNotNull(posts);
-            assertEquals(1, posts.length);
-            assertEquals(1, posts[0].getComments().size());
-        });
+        Post createdPost = socialService.createPost(post.getUserId(), post.getContent());
+
+        assertNotNull(createdPost);
+        assertEquals("Test post", createdPost.getContent());
+        verify(postRepository).save(any(Post.class));
     }
 
     @Test
-    void testFollowAndLikePost() {
-        // User 1 creates a post
-        HttpEntity<Map<String, Object>> postRequest = new HttpEntity<>(Map.of(
-            "userId", 1L,
-            "content", "Test post"
-        ));
-        ResponseEntity<Post> postResponse = restTemplate.postForEntity("/api/social/posts", postRequest, Post.class);
-        Long postId = postResponse.getBody().getId();
+    void testGetPostsByUserId() {
+        Long userId = 1L;
+        Post post1 = new Post();
+        post1.setUserId(userId);
+        post1.setContent("Test post 1");
+        Post post2 = new Post();
+        post2.setUserId(userId);
+        post2.setContent("Test post 2");
 
-        // User 2 follows User 1
-        restTemplate.postForEntity("/api/social/follow?followerId=2&followedId=1", null, Void.class);
+        when(postRepository.findByUserId(userId)).thenReturn(Arrays.asList(post1, post2));
 
-        // User 2 likes User 1's post
-        restTemplate.postForEntity("/api/social/posts/" + postId + "/likes?userId=2", null, Void.class);
+        List<Post> posts = socialService.getPostsByUserId(userId);
 
-        // Verify the follow and like
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            assertTrue(followRepository.existsByFollowerIdAndFollowedId(2L, 1L));
-            Post post = postRepository.findById(postId).orElseThrow();
-            assertTrue(post.getLikes().contains(2L));
-        });
+        assertEquals(2, posts.size());
+        assertEquals("Test post 1", posts.get(0).getContent());
+        assertEquals("Test post 2", posts.get(1).getContent());
+    }
+
+    @Test
+    void testAddComment() {
+        Long postId = 1L;
+        Post post = new Post();
+        post.setId(postId);
+        post.setUserId(1L);
+        post.setContent("Test post");
+
+        Comment comment = new Comment();
+        comment.setUserId(2L);
+        comment.setContent("Test comment");
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(commentRepository.save(any(Comment.class))).thenReturn(comment);
+
+        Comment addedComment = socialService.addComment(postId, comment.getUserId(), comment.getContent());
+
+        assertNotNull(addedComment);
+        assertEquals("Test comment", addedComment.getContent());
+        verify(commentRepository).save(any(Comment.class));
+    }
+
+    @Test
+    void testFollowUser() {
+        Long followerId = 1L;
+        Long followedId = 2L;
+
+        socialService.followUser(followerId, followedId);
+
+        verify(followRepository).save(any());
+    }
+
+    @Test
+    void testUnfollowUser() {
+        Long followerId = 1L;
+        Long followedId = 2L;
+
+        socialService.unfollowUser(followerId, followedId);
+
+        verify(followRepository).deleteByFollowerIdAndFollowedId(followerId, followedId);
+    }
+
+    @Test
+    void testLikePost() {
+        Long postId = 1L;
+        Long userId = 1L;
+        Post post = new Post();
+        post.setId(postId);
+        post.setUserId(2L);
+        post.setContent("Test post");
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+
+        socialService.likePost(postId, userId);
+
+        assertTrue(post.getLikes().contains(userId));
+        verify(postRepository).save(post);
+    }
+
+    @Test
+    void testUnlikePost() {
+        Long postId = 1L;
+        Long userId = 1L;
+        Post post = new Post();
+        post.setId(postId);
+        post.setUserId(2L);
+        post.setContent("Test post");
+        post.getLikes().add(userId);
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+
+        socialService.unlikePost(postId, userId);
+
+        assertFalse(post.getLikes().contains(userId));
+        verify(postRepository).save(post);
     }
 }

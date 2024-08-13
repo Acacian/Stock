@@ -12,7 +12,7 @@ import stock.user_service.model.User;
 // import stock.user_service.model.Like;
 import stock.user_service.repository.*;
 import stock.user_service.dto.UpdateProfileRequest;
-import stock.common.event.UserEvent;
+import stock.user_service.kafka.UserEvent;
 
 import java.time.LocalDateTime;
 
@@ -49,66 +49,4 @@ public class UserService {
         userRepository.save(user);
         logger.info("Updated last login time for user ID: {}", userId);
     }
-
-    // public void followUser(Long followerId, Long followeeId) {
-    //     User follower = getUser(followerId);
-    //     User followee = getUser(followeeId);
-
-    //     if (followRepository.existsByFollowerAndFollowee(follower, followee)) {
-    //         throw new RuntimeException("Already following this user");
-    //     }
-
-    //     Follow follow = new Follow();
-    //     follow.setFollower(follower);
-    //     follow.setFollowee(followee);
-    //     follow.setCreatedAt(LocalDateTime.now());
-    //     followRepository.save(follow);
-
-    //     kafkaTemplate.send("user-events", new UserEvent("USER_FOLLOWED", followerId, followeeId.toString()));
-    // }
-
-    // public void createPost(Long userId, String content) {
-    //     User user = getUser(userId);
-
-    //     Post post = new Post();
-    //     post.setUser(user);
-    //     post.setContent(content);
-    //     post.setCreatedAt(LocalDateTime.now());
-    //     postRepository.save(post);
-
-    //     kafkaTemplate.send("user-events", new UserEvent("POST_CREATED", userId, content));
-    // }
-
-    // public void addComment(Long userId, Long postId, String content) {
-    //     User user = getUser(userId);
-    //     Post post = postRepository.findById(postId)
-    //             .orElseThrow(() -> new RuntimeException("Post not found"));
-
-    //     Comment comment = new Comment();
-    //     comment.setUser(user);
-    //     comment.setPost(post);
-    //     comment.setContent(content);
-    //     comment.setCreatedAt(LocalDateTime.now());
-    //     commentRepository.save(comment);
-
-    //     kafkaTemplate.send("user-events", new UserEvent("COMMENT_ADDED", userId, postId + "," + content));
-    // }
-
-    // public void likePost(Long userId, Long postId) {
-    //     User user = getUser(userId);
-    //     Post post = postRepository.findById(postId)
-    //             .orElseThrow(() -> new RuntimeException("Post not found"));
-
-    //     if (likeRepository.existsByUserAndPost(user, post)) {
-    //         throw new RuntimeException("Already liked this post");
-    //     }
-
-    //     Like like = new Like();
-    //     like.setUser(user);
-    //     like.setPost(post);
-    //     like.setCreatedAt(LocalDateTime.now());
-    //     likeRepository.save(like);
-
-    //     kafkaTemplate.send("user-events", new UserEvent("POST_LIKED", userId, postId.toString()));
-    // }
 }

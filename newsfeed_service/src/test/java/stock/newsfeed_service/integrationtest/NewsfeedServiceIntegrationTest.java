@@ -1,4 +1,4 @@
-package stock.newsfeed_service;
+package stock.newsfeed_service.integrationtest;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,13 +7,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import stock.common.event.SocialEvent;
+import stock.newsfeed_service.kafka.SocialEvent;
 import stock.newsfeed_service.service.NewsfeedService;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import static org.awaitility.Awaitility.await;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
 @DirtiesContext
 @Testcontainers
@@ -46,7 +48,6 @@ class NewsfeedServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Clear Redis before each test
         newsfeedService.clearAllNewsfeeds();
     }
 

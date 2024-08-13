@@ -1,2 +1,6 @@
 rootProject.name = 'Stock'
-include 'common', 'authentication', 'user_service' , 'newsfeed_service', 'social_service'
+
+include 'authentication'
+include 'user_service'
+include 'social_service'
+include 'newsfeed_service'

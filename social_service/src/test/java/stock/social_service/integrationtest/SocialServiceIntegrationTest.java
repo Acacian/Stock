@@ -1,4 +1,4 @@
-package stock.social_service;
+package stock.social_service.integrationtest;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -6,8 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.annotation.DirtiesContext;
@@ -69,7 +67,7 @@ class SocialServiceIntegrationTest {
 
         // Verify the comment was added
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            ResponseEntity<Post> getPostResponse = restTemplate.getForEntity("/api/social/posts/user/1", Post[].class);
+            ResponseEntity<Post[]> getPostResponse = restTemplate.getForEntity("/api/social/posts/user/1", Post[].class);
             assertEquals(200, getPostResponse.getStatusCodeValue());
             Post[] posts = getPostResponse.getBody();
             assertNotNull(posts);

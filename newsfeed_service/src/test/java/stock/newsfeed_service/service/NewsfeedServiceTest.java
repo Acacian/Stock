@@ -7,7 +7,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import stock.common.event.SocialEvent;
+import stock.newsfeed_service.kafka.SocialEvent;
 
 import java.util.Arrays;
 import java.util.List;

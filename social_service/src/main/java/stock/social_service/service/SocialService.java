@@ -9,7 +9,7 @@ import stock.social_service.model.Follow;
 import stock.social_service.repository.PostRepository;
 import stock.social_service.repository.CommentRepository;
 import stock.social_service.repository.FollowRepository;
-import stock.common.event.SocialEvent;
+import stock.social_service.kafka.SocialEvent;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -84,5 +84,24 @@ public class SocialService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
         return post.getComments().stream().collect(Collectors.toList());
+    }
+
+    public void followUser(Long followerId, Long followedId) {
+        follow(followerId, followedId);
+    }
+
+    public void unfollowUser(Long followerId, Long followedId) {
+        followRepository.deleteByFollowerIdAndFollowedId(followerId, followedId);
+        kafkaTemplate.send("social-events", new SocialEvent("USER_UNFOLLOWED", followerId, followedId));
+    }
+
+    public void unlikePost(Long userId, Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        if (post.getLikes().remove(userId)) {
+            postRepository.save(post);
+            kafkaTemplate.send("social-events", new SocialEvent("POST_UNLIKED", userId, postId));
+        }
     }
 }
