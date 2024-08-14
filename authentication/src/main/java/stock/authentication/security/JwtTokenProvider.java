@@ -2,6 +2,7 @@ package stock.authentication.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,24 +10,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
-
     private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    @Value("${app.jwt.secret}")
-    private String jwtSecret;
-    
     @Value("${app.jwt.expirationInMs}")
     private int jwtExpirationInMs;
 
-    private Key getSigningKey() {
-        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
+    private Key key;
+
+    @PostConstruct
+    public void init() {
+        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
     }
 
     public String generateToken(Authentication authentication) {
@@ -38,13 +36,13 @@ public class JwtTokenProvider {
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
 
     public String getUsernameFromJWT(String token) {
         Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -55,7 +53,7 @@ public class JwtTokenProvider {
     public boolean validateToken(String authToken) {
         try {
             Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(authToken);
             return true;

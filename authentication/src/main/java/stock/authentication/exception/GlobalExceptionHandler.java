@@ -1,10 +1,14 @@
 package stock.authentication.exception;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
@@ -12,45 +16,51 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleException(Exception e) {
+    public ResponseEntity<Map<String, String>> handleException(Exception e) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", "An error occurred");
+        errorResponse.put("message", e.getMessage());
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body("An error occurred: " + e.getMessage());
+            .body(errorResponse);
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<?> handleEmailAlreadyExistsException(EmailAlreadyExistsException e) {
-        return ResponseEntity
-            .status(HttpStatus.CONFLICT)
-            .body("Email is already in use: " + e.getMessage());
+    public ResponseEntity<String> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<?> handleBadCredentialsException(BadCredentialsException e) {
+    public ResponseEntity<String> handleBadCredentialsException(BadCredentialsException e) {
         return ResponseEntity
             .status(HttpStatus.UNAUTHORIZED)
             .body("Invalid email or password");
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<?> handleUsernameNotFoundException(UsernameNotFoundException e) {
+    public ResponseEntity<String> handleUsernameNotFoundException(UsernameNotFoundException e) {
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body("User not found: " + e.getMessage());
     }
 
     @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<?> handleInvalidTokenException(InvalidTokenException e) {
+    public ResponseEntity<String> handleInvalidTokenException(InvalidTokenException e) {
         return ResponseEntity
             .status(HttpStatus.UNAUTHORIZED)
             .body("Invalid token: " + e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException e) {
+    public ResponseEntity<String> handleValidationExceptions(MethodArgumentNotValidException e) {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body("Validation error: " + e.getBindingResult().getAllErrors().get(0).getDefaultMessage());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<String> handleAuthenticationException(AuthenticationException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed: " + e.getMessage());
     }
 
     // Custom Exception classes

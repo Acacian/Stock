@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,6 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.AuthenticationException;
 
 import stock.authentication.exception.GlobalExceptionHandler.EmailAlreadyExistsException;
 import stock.authentication.exception.GlobalExceptionHandler.InvalidTokenException;
@@ -20,6 +22,7 @@ import stock.authentication.model.User;
 import stock.authentication.repository.UserRepository;
 import stock.authentication.security.JwtTokenProvider;
 import stock.authentication.kafka.AuthEvent;
+import stock.authentication.security.UserPrincipal;
 
 @Service
 public class AuthService {
@@ -46,7 +49,9 @@ public class AuthService {
     @Autowired
     private EmailService emailService;
 
-    // 회원가입 및 이메일 인증 처리
+    @Value("${spring.profiles.active:}")
+    private String activeProfile;
+
     public User registerUser(User user) {
         logger.info("새로운 사용자 등록: {}", user.getEmail());
         if (userRepository.existsByEmail(user.getEmail())) {
@@ -57,10 +62,14 @@ public class AuthService {
         user.setEnabled(false);
         User savedUser = userRepository.save(user);
 
-        String token = generateVerificationToken();
-        redisTemplate.opsForValue().set("verification:" + token, savedUser.getEmail(), 24, TimeUnit.HOURS);
-
-        emailService.sendVerificationEmail(savedUser.getEmail(), token);
+        if ("test".equals(activeProfile)) {
+            savedUser.setEnabled(true);
+            userRepository.save(savedUser);
+        } else {
+            String token = generateVerificationToken();
+            redisTemplate.opsForValue().set("verification:" + token, savedUser.getEmail(), 24, TimeUnit.HOURS);
+            emailService.sendVerificationEmail(savedUser.getEmail(), token);
+        }
         
         return savedUser;
     }
@@ -69,7 +78,6 @@ public class AuthService {
         return UUID.randomUUID().toString();
     }
 
-    // 이메일 인증 처리
     public void verifyUser(String token) {
         String email = redisTemplate.opsForValue().get("verification:" + token);
         if (email == null) {
@@ -84,21 +92,25 @@ public class AuthService {
         redisTemplate.delete("verification:" + token);
     }
 
-    // 인증 처리
     public String authenticateUser(String email, String password) {
-        logger.info("사용자 인증: {}", email);
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password)
-        );
-
-        String token = tokenProvider.generateToken(authentication);
-        User user = (User) authentication.getPrincipal();
-        kafkaTemplate.send("user-events", new AuthEvent("USER_AUTHENTICATED", user.getId()));
-        logger.info("사용자 인증 성공: {}", email);
-        return token;
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, password)
+            );
+    
+            String token = tokenProvider.generateToken(authentication);
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User user = userRepository.findByEmail(userPrincipal.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            kafkaTemplate.send("user-events", new AuthEvent("USER_AUTHENTICATED", user.getId()));
+            logger.info("사용자 인증 성공: {}", email);
+            return token;
+        } catch (AuthenticationException e) {
+            logger.error("Authentication failed for user: {}", email, e);
+            throw new RuntimeException("Invalid email or password");
+        }
     }
 
-    // 로그아웃 처리
     public void logout(String token) {
         logger.info("사용자 로그아웃");
         String key = "token:" + token;
@@ -106,7 +118,6 @@ public class AuthService {
         logger.info("토큰 블랙리스트 등록: {}", token);
     }
 
-    // 비밀번호 업데이트
     public void updatePassword(Long userId, String oldPassword, String newPassword) {
         logger.info("사용자 ID: {}의 비밀번호 업데이트", userId);
         User user = userRepository.findById(userId)
@@ -124,5 +135,10 @@ public class AuthService {
         redisTemplate.delete(userTokenKey);
         kafkaTemplate.send("user-events", new AuthEvent("PASSWORD_UPDATED", userId));
         logger.info("사용자 ID: {}의 비밀번호 업데이트 및 모든 장치에서 로그아웃 처리 완료", userId);
+    }
+
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }

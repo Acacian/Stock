@@ -1,81 +1,129 @@
 package stock.authentication.integrationtest;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import stock.authentication.dto.JwtAuthenticationResponse;
+import stock.authentication.repository.UserRepository;
+import stock.authentication.model.User;
 
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
 @DirtiesContext
 class IntegrationTest {
 
-    @BeforeAll
-    public static void printEnvironmentVariables() {
-        System.out.println("Printing all environment variables:");
-        System.getenv().forEach((key, value) -> System.out.println(key + "=" + value));
-        
-        System.out.println("\nPrinting all system properties:");
-        System.getProperties().forEach((key, value) -> System.out.println(key + "=" + value));
-    }
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Value("${test.email}")
+    private String testEmail;
+
     private String authToken;
+    private final String testPassword = "testPassword123";
 
     @BeforeEach
     void setup() {
-        // Register and login a user
-        ResponseEntity<String> registerResponse = restTemplate.postForEntity("/api/auth/register", 
-            Map.of("email", "test@example.com", "password", "password"), String.class);
-        assertEquals(200, registerResponse.getStatusCodeValue());
-
-        ResponseEntity<String> loginResponse = restTemplate.postForEntity("/api/auth/login", 
-            Map.of("email", "test@example.com", "password", "password"), String.class);
-        authToken = loginResponse.getHeaders().getFirst("Authorization");
+        userRepository.deleteAll();
     }
 
     @Test
-    void testAuthFlow() {
+    void testRegistrationAndAuthFlow() {
+        // Register
+        ResponseEntity<String> registerResponse = restTemplate.postForEntity("/api/auth/register", 
+            Map.of("email", testEmail, "password", testPassword, "name", "Test User"), String.class);
+        assertEquals(200, registerResponse.getStatusCode().value());
+
+        // Login immediately after registration
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + authToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String loginBody = String.format("{\"email\":\"%s\",\"password\":\"%s\"}", testEmail, testPassword);
+        HttpEntity<String> loginRequest = new HttpEntity<>(loginBody, headers);
+        
+        ResponseEntity<JwtAuthenticationResponse> loginResponse = restTemplate.exchange(
+            "/api/auth/login",
+            HttpMethod.POST,
+            loginRequest,
+            JwtAuthenticationResponse.class
+        );
+
+        assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
+        assertNotNull(loginResponse.getBody());
+        authToken = loginResponse.getBody().getToken();
+        assertNotNull(authToken);
 
         // Verify authentication
-        ResponseEntity<String> authCheckResponse = restTemplate.exchange("/api/auth/check", HttpMethod.GET, new HttpEntity<>(headers), String.class);
-        assertEquals(200, authCheckResponse.getStatusCodeValue());
+        headers.set("Authorization", "Bearer " + authToken);
+        ResponseEntity<String> authCheckResponse = restTemplate.exchange(
+            "/api/auth/check", 
+            HttpMethod.GET,
+            new HttpEntity<>(headers),
+            String.class
+        );
+        assertEquals(HttpStatus.OK, authCheckResponse.getStatusCode());
 
         // Logout
-        restTemplate.exchange("/api/auth/logout", HttpMethod.POST, new HttpEntity<>(headers), Void.class);
+        ResponseEntity<Void> logoutResponse = restTemplate.exchange(
+            "/api/auth/logout",
+            HttpMethod.POST,
+            new HttpEntity<>(headers),
+            Void.class
+        );
+        assertEquals(HttpStatus.OK, logoutResponse.getStatusCode());
 
         // Verify logout
-        ResponseEntity<String> logoutCheckResponse = restTemplate.exchange("/api/auth/check", HttpMethod.GET, new HttpEntity<>(headers), String.class);
-        assertEquals(401, logoutCheckResponse.getStatusCodeValue());
+        ResponseEntity<String> logoutCheckResponse = restTemplate.exchange(
+            "/api/auth/check", 
+            HttpMethod.GET,
+            new HttpEntity<>(headers),
+            String.class
+        );
+        assertEquals(HttpStatus.UNAUTHORIZED, logoutCheckResponse.getStatusCode());
     }
 
     @Test
     void testInvalidLogin() {
-        ResponseEntity<String> loginResponse = restTemplate.postForEntity("/api/auth/login", 
-            Map.of("email", "test@example.com", "password", "wrongpassword"), String.class);
-        assertEquals(401, loginResponse.getStatusCodeValue());
+        String uniqueEmail = "test" + System.currentTimeMillis() + "@example.com";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String loginBody = String.format("{\"email\":\"%s\",\"password\":\"%s\"}", uniqueEmail, "wrongpassword");
+        HttpEntity<String> loginRequest = new HttpEntity<>(loginBody, headers);
+        
+        ResponseEntity<Map<String, String>> loginResponse = restTemplate.exchange(
+            "/api/auth/login",
+            HttpMethod.POST,
+            loginRequest,
+            new ParameterizedTypeReference<Map<String, String>>() {}
+        );
+        assertEquals(HttpStatus.UNAUTHORIZED, loginResponse.getStatusCode());
     }
 
     @Test
     void testLogoutTokenInvalidation() {
+        // Register and login
+        ResponseEntity<String> registerResponse = restTemplate.postForEntity("/api/auth/register", 
+            Map.of("email", testEmail, "password", testPassword, "name", "Test User"), String.class);
+        assertEquals(200, registerResponse.getStatusCode().value());
+
+        ResponseEntity<JwtAuthenticationResponse> loginResponse = restTemplate.postForEntity("/api/auth/login", 
+            Map.of("email", testEmail, "password", testPassword), JwtAuthenticationResponse.class);
+        assertEquals(200, loginResponse.getStatusCode().value());
+        authToken = loginResponse.getBody().getToken();
+
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + authToken);
 
@@ -83,7 +131,8 @@ class IntegrationTest {
         restTemplate.exchange("/api/auth/logout", HttpMethod.POST, new HttpEntity<>(headers), Void.class);
 
         // Try to use the same token
-        ResponseEntity<String> response = restTemplate.exchange("/api/auth/check", HttpMethod.GET, new HttpEntity<>(headers), String.class);
-        assertEquals(401, response.getStatusCodeValue());
+        ResponseEntity<String> response = restTemplate.exchange("/api/auth/check", 
+            HttpMethod.GET, new HttpEntity<>(headers), String.class);
+        assertEquals(401, response.getStatusCode().value());
     }
 }
