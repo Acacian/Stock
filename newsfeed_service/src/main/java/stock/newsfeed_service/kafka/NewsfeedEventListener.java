@@ -10,16 +10,8 @@ public class NewsfeedEventListener {
     @Autowired
     private NewsfeedService newsfeedService;
 
-    @KafkaListener(topics = {"user-events", "social-events"}, groupId = "newsfeed-service-group")
-    public void listen(Object event) {
-        if (event instanceof UserEvent) {
-            handleUserEvent((UserEvent) event);
-        } else if (event instanceof SocialEvent) {
-            handleSocialEvent((SocialEvent) event);
-        }
-    }
-
-    private void handleUserEvent(UserEvent event) {
+    @KafkaListener(topics = "user-events", groupId = "newsfeed-service-group")
+    public void listenUserEvents(UserEvent event) {
         switch (event.getType()) {
             case "USER_FOLLOWED":
                 newsfeedService.addFollowActivity(event.getUserId(), event.getTargetUserId());
@@ -28,7 +20,8 @@ public class NewsfeedEventListener {
         }
     }
 
-    private void handleSocialEvent(SocialEvent event) {
+    @KafkaListener(topics = "social-events", groupId = "newsfeed-service-group")
+    public void listenSocialEvents(SocialEvent event) {
         switch (event.getType()) {
             case "POST_CREATED":
                 newsfeedService.addPostActivity(event.getUserId(), event.getPostId());

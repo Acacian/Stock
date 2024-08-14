@@ -19,7 +19,7 @@ import stock.authentication.exception.GlobalExceptionHandler.InvalidTokenExcepti
 import stock.authentication.model.User;
 import stock.authentication.repository.UserRepository;
 import stock.authentication.security.JwtTokenProvider;
-import stock.authentication.kafka.UserEvent;
+import stock.authentication.kafka.AuthEvent;
 
 @Service
 public class AuthService {
@@ -38,7 +38,7 @@ public class AuthService {
     private JwtTokenProvider tokenProvider;
 
     @Autowired
-    private KafkaTemplate<String, UserEvent> kafkaTemplate;
+    private KafkaTemplate<String, AuthEvent> kafkaTemplate;
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
@@ -93,7 +93,7 @@ public class AuthService {
 
         String token = tokenProvider.generateToken(authentication);
         User user = (User) authentication.getPrincipal();
-        kafkaTemplate.send("user-events", new UserEvent("USER_AUTHENTICATED", user.getId(), user.getEmail()));
+        kafkaTemplate.send("user-events", new AuthEvent("USER_AUTHENTICATED", user.getId()));
         logger.info("사용자 인증 성공: {}", email);
         return token;
     }
@@ -122,7 +122,7 @@ public class AuthService {
 
         String userTokenKey = "user_tokens:" + userId;
         redisTemplate.delete(userTokenKey);
-        kafkaTemplate.send("user-events", new UserEvent("PASSWORD_UPDATED", userId, null));
+        kafkaTemplate.send("user-events", new AuthEvent("PASSWORD_UPDATED", userId));
         logger.info("사용자 ID: {}의 비밀번호 업데이트 및 모든 장치에서 로그아웃 처리 완료", userId);
     }
 }

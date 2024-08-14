@@ -7,10 +7,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import stock.newsfeed_service.kafka.SocialEvent;
+import stock.newsfeed_service.repository.UserRepository;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -26,6 +28,9 @@ class NewsfeedServiceTest {
     @Mock
     private ListOperations<String, String> listOperations;
 
+    @Mock
+    private UserRepository userRepository;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -33,12 +38,50 @@ class NewsfeedServiceTest {
     }
 
     @Test
-    void testConsumeSocialEvent() {
-        SocialEvent event = new SocialEvent("POST_CREATED", 1L, 2L);
-        newsfeedService.consumeSocialEvent(event);
+    void testAddFollowActivity() {
+        newsfeedService.addFollowActivity(1L, 2L);
+        verify(listOperations).leftPush(eq("newsfeed:2"), contains("User 1 followed User 2"));
+        verify(listOperations).trim(eq("newsfeed:2"), eq(0L), eq(99L));
+    }
 
-        verify(listOperations).leftPush(eq("newsfeed:1"), anyString());
-        verify(listOperations).trim(eq("newsfeed:1"), eq(0L), eq(99L));
+    @Test
+    void testAddPostActivity() {
+        Set<Long> followers = new HashSet<>(Arrays.asList(2L, 3L));
+        when(userRepository.getFollowers(1L)).thenReturn(followers);
+
+        newsfeedService.addPostActivity(1L, 10L);
+
+        verify(listOperations).leftPush(eq("newsfeed:2"), contains("User 1 created a new post: 10"));
+        verify(listOperations).leftPush(eq("newsfeed:3"), contains("User 1 created a new post: 10"));
+        verify(listOperations, times(2)).trim(anyString(), eq(0L), eq(99L));
+    }
+
+    @Test
+    void testAddCommentActivity() {
+        Set<Long> followers = new HashSet<>(Arrays.asList(2L, 3L));
+        when(userRepository.getFollowers(1L)).thenReturn(followers);
+        when(userRepository.getPostOwner(10L)).thenReturn(4L);
+
+        newsfeedService.addCommentActivity(1L, 10L, 20L);
+
+        verify(listOperations).leftPush(eq("newsfeed:2"), contains("User 1 commented on post 10"));
+        verify(listOperations).leftPush(eq("newsfeed:3"), contains("User 1 commented on post 10"));
+        verify(listOperations).leftPush(eq("newsfeed:4"), contains("User 1 commented on post 10"));
+        verify(listOperations, times(3)).trim(anyString(), eq(0L), eq(99L));
+    }
+
+    @Test
+    void testAddLikeActivity() {
+        Set<Long> followers = new HashSet<>(Arrays.asList(2L, 3L));
+        when(userRepository.getFollowers(1L)).thenReturn(followers);
+        when(userRepository.getPostOwner(10L)).thenReturn(4L);
+
+        newsfeedService.addLikeActivity(1L, 10L);
+
+        verify(listOperations).leftPush(eq("newsfeed:2"), contains("User 1 liked post 10"));
+        verify(listOperations).leftPush(eq("newsfeed:3"), contains("User 1 liked post 10"));
+        verify(listOperations).leftPush(eq("newsfeed:4"), contains("User 1 liked post 10"));
+        verify(listOperations, times(3)).trim(anyString(), eq(0L), eq(99L));
     }
 
     @Test
@@ -64,26 +107,6 @@ class NewsfeedServiceTest {
 
         assertEquals("newestEvent", result.get(0));
         assertEquals("oldestEvent", result.get(2));
-    }
-
-    @Test
-    void testNewsfeedLimit() {
-        newsfeedService.consumeSocialEvent(new SocialEvent("TEST_EVENT", 1L, 1L));
-        verify(listOperations).trim(eq("newsfeed:1"), eq(0L), eq(99L));
-    }
-
-    @Test
-    void testConsumeMultipleSocialEvents() {
-        SocialEvent event1 = new SocialEvent("POST_CREATED", 1L, 2L);
-        SocialEvent event2 = new SocialEvent("COMMENT_ADDED", 1L, 3L);
-        SocialEvent event3 = new SocialEvent("POST_LIKED", 1L, 4L);
-
-        newsfeedService.consumeSocialEvent(event1);
-        newsfeedService.consumeSocialEvent(event2);
-        newsfeedService.consumeSocialEvent(event3);
-
-        verify(listOperations, times(3)).leftPush(eq("newsfeed:1"), anyString());
-        verify(listOperations, times(3)).trim(eq("newsfeed:1"), eq(0L), eq(99L));
     }
 
     @Test

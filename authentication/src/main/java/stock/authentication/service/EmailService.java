@@ -15,10 +15,10 @@ public class EmailService {
     @Autowired
     private JavaMailSender emailSender;
 
-    @Value("${full.mail.address}")
+    @Value("${sending.email}")
     private String fromEmail;
 
-    @Value("${app.domain:localhost}")
+    @Value("${app.domain}")
     private String appDomain;
 
     public void sendVerificationEmail(String toEmail, String token) {

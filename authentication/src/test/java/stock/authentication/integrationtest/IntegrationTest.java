@@ -1,5 +1,6 @@
 package stock.authentication.integrationtest;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
 @DirtiesContext
 class IntegrationTest {
+
+    @BeforeAll
+    public static void printEnvironmentVariables() {
+        System.out.println("Printing all environment variables:");
+        System.getenv().forEach((key, value) -> System.out.println(key + "=" + value));
+        
+        System.out.println("\nPrinting all system properties:");
+        System.getProperties().forEach((key, value) -> System.out.println(key + "=" + value));
+    }
 
     @Autowired
     private TestRestTemplate restTemplate;

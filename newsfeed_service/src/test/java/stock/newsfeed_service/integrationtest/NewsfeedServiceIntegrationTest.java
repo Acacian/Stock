@@ -15,6 +15,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import stock.newsfeed_service.kafka.SocialEvent;
+import stock.newsfeed_service.kafka.UserEvent;
 import stock.newsfeed_service.service.NewsfeedService;
 
 import java.util.List;
@@ -29,9 +30,8 @@ import java.util.concurrent.TimeUnit;
 @DirtiesContext
 @Testcontainers
 class NewsfeedServiceIntegrationTest {
-
     @Container
-    public static GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:6.2"))
+    public static final GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:6.2"))
             .withExposedPorts(6379);
 
     @DynamicPropertySource
@@ -44,7 +44,10 @@ class NewsfeedServiceIntegrationTest {
     private NewsfeedService newsfeedService;
 
     @Autowired
-    private KafkaTemplate<String, SocialEvent> kafkaTemplate;
+    private KafkaTemplate<String, SocialEvent> socialKafkaTemplate;
+
+    @Autowired
+    private KafkaTemplate<String, UserEvent> userKafkaTemplate;
 
     @BeforeEach
     void setUp() {
@@ -54,28 +57,29 @@ class NewsfeedServiceIntegrationTest {
     @Test
     void testNewsfeedIntegration() {
         Long userId = 1L;
+        Long postId = 2L;
+        Long commentId = 3L;
 
-        // Send a social event via Kafka
-        SocialEvent event = new SocialEvent("POST_CREATED", userId, 2L);
-        kafkaTemplate.send("social-events", event);
+        // Test follow event
+        userKafkaTemplate.send("user-events", new UserEvent("USER_FOLLOWED", userId, 4L));
 
-        // Wait for the event to be processed
+        // Test post creation
+        socialKafkaTemplate.send("social-events", new SocialEvent("POST_CREATED", userId, postId, null));
+
+        // Test comment creation
+        socialKafkaTemplate.send("social-events", new SocialEvent("COMMENT_CREATED", userId, postId, commentId));
+
+        // Test like event
+        socialKafkaTemplate.send("social-events", new SocialEvent("POST_LIKED", userId, postId, null));
+
+        // Wait for events to be processed
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
             List<String> newsfeed = newsfeedService.getNewsfeed(userId);
-            assertFalse(newsfeed.isEmpty());
-            assertTrue(newsfeed.get(0).contains("POST_CREATED"));
-        });
-
-        // Send another event
-        SocialEvent event2 = new SocialEvent("COMMENT_ADDED", userId, 3L);
-        kafkaTemplate.send("social-events", event2);
-
-        // Check if both events are in the newsfeed
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            List<String> newsfeed = newsfeedService.getNewsfeed(userId);
-            assertEquals(2, newsfeed.size());
-            assertTrue(newsfeed.get(0).contains("COMMENT_ADDED"));
-            assertTrue(newsfeed.get(1).contains("POST_CREATED"));
+            assertEquals(4, newsfeed.size());
+            assertTrue(newsfeed.get(0).contains("liked post"));
+            assertTrue(newsfeed.get(1).contains("commented on post"));
+            assertTrue(newsfeed.get(2).contains("created a new post"));
+            assertTrue(newsfeed.get(3).contains("followed User"));
         });
     }
 }
