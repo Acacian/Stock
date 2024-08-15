@@ -32,10 +32,24 @@ COPY --from=build /app/user_service/src/main/resources/application.properties /a
 COPY --from=build /app/user_service/src/test/resources/application-test.properties /app/
 COPY --from=build /app/gradlew /app/
 COPY --from=build /app/gradle /app/gradle
+COPY --from=build /app/.env /app/.env
 
+# 환경 변수 설정
+ENV MODE=${MODE:-prod}
 ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-ENV SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock_Test
-ENV SPRING_DATASOURCE_USERNAME=root
-ENV SPRING_DATASOURCE_PASSWORD=${TEST_DB_PASSWORD}
+ENV DB_NAME=${DB_NAME:-Stock}
+ENV DB_PASSWORD_VAR=${DB_PASSWORD_VAR:-DB_PASSWORD}
 
-CMD ["java", "-jar", "-Dspring.profiles.active=test", "app.jar"]
+# 시작 명령어
+CMD if [ "$MODE" = "test" ]; then \
+        echo "Running in TEST mode"; \
+        export SPRING_PROFILES_ACTIVE=test; \
+        export SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock_Test; \
+        export SPRING_DATASOURCE_PASSWORD=$TEST_DB_PASSWORD; \
+    else \
+        echo "Running in PRODUCTION mode"; \
+        export SPRING_PROFILES_ACTIVE=prod; \
+        export SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock; \
+        export SPRING_DATASOURCE_PASSWORD=$DB_PASSWORD; \
+    fi && \
+    java -jar -Dspring.profiles.active=$SPRING_PROFILES_ACTIVE app.jar

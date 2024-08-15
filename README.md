@@ -1,12 +1,20 @@
 # 개요
-1달간의 개인 백엔드 프로젝트로, 주식 토론 게시판에
+1달간의 개인 백엔드 프로젝트로, 주식 토론 게시판을 구현합니다.
 
-# Used Framework
+# Port
+MySQL : 3306
+Redis : 6379
+Kafka : 9092
+Zookeeper : 2181
+user-service : 8082
+newsfeed-service : 8083
+social-service : 8084
+(기존에 auth-service가 있었으나, 비용 절약 및 큰 기능 차이가 없어 user-service와 통합)
 
+# Used Framework & Architecture
+Java, Spring Boot, Kafka, Redis
 
 # TroubleShooting
-
-
 
 
 # How to Setup
@@ -14,8 +22,7 @@
 
 # Erd
 Root에 있는 erd.sql 및 erd.vuerd.json을 참고해주세요.
-뉴스피드는 쿼리로 처리할 수 있지만, 시간복잡도 증가 및 서버 부하를 고려해
-데이터가 보존되고 이벤트로 Pub/Sub 처리가 되는 Kafka 방식을 채택하였습니다.
+뉴스피드는 쿼리가 너무 많아, Kafka와 Redis를 사용해 Table 없이 구현했습니다.
 
 # Docker 명령어
 start : docker-compose up -d

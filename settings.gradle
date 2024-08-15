@@ -1,6 +1,5 @@
 rootProject.name = 'Stock'
 
-include 'authentication'
 include 'user_service'
 include 'social_service'
 include 'newsfeed_service'

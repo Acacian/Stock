@@ -21,8 +21,8 @@ services:
     image: mysql:8.0.39
     container_name: mysql-db
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: Stock
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD_VAR:-DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-Stock}
     ports:
       - "3306:3306"
     volumes:
@@ -63,11 +63,11 @@ services:
     networks:
       - my-network
 
-  auth-service:
+  user-service:
     build:
       context: .
-      dockerfile: authentication/Dockerfile
-    container_name: auth-service
+      dockerfile: user_service/Dockerfile
+    container_name: user-service
     ports:
       - "8082:8082"
     depends_on:
@@ -76,21 +76,8 @@ services:
       - kafka
     env_file:
       - .env
-    networks:
-      - my-network
-
-  user-service:
-    build:
-      context: .
-      dockerfile: user_service/Dockerfile
-    container_name: user-service
-    ports:
-      - "8081:8081"
-    depends_on:
-      - db
-      - kafka
-    env_file:
-      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-prod}
     networks:
       - my-network
 
@@ -106,6 +93,8 @@ services:
       - kafka
     env_file:
       - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-prod}
     networks:
       - my-network
 
@@ -121,6 +110,8 @@ services:
       - kafka
     env_file:
       - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-prod}
     networks:
       - my-network
 
@@ -130,17 +121,18 @@ services:
       dockerfile: Dockerfile.test
     container_name: integration-test
     depends_on:
-      - auth-service
       - user-service
       - newsfeed-service
       - social-service
     environment:
-      - SPRING_PROFILES_ACTIVE=test
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/Stock
+      - SPRING_PROFILES_ACTIVE=${MODE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/${DB_NAME:-Stock}
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_VAR:-DB_PASSWORD}
     networks:
       - my-network
+    env_file:
+      - .env
     command: ["./gradlew", "integrationTest"]
 
 volumes:
