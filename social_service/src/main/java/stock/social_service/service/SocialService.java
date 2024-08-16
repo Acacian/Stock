@@ -11,8 +11,7 @@ import stock.social_service.repository.CommentRepository;
 import stock.social_service.repository.FollowRepository;
 import stock.social_service.kafka.SocialEvent;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 public class SocialService {
@@ -35,7 +34,7 @@ public class SocialService {
         post.setContent(content);
         Post savedPost = postRepository.save(post);
         
-        kafkaTemplate.send("social-events", new SocialEvent("POST_CREATED", userId, savedPost.getId()));
+        kafkaTemplate.send("social-events", new SocialEvent("POST_CREATED", userId, savedPost.getId(), null));
         return savedPost;
     }
 
@@ -49,7 +48,7 @@ public class SocialService {
         comment.setContent(content);
         Comment savedComment = commentRepository.save(comment);
 
-        kafkaTemplate.send("social-events", new SocialEvent("COMMENT_ADDED", userId, postId));
+        kafkaTemplate.send("social-events", new SocialEvent("COMMENT_ADDED", userId, postId, savedComment.getId()));
         return savedComment;
     }
 
@@ -59,7 +58,17 @@ public class SocialService {
 
         if (post.getLikes().add(userId)) {
             postRepository.save(post);
-            kafkaTemplate.send("social-events", new SocialEvent("POST_LIKED", userId, postId));
+            kafkaTemplate.send("social-events", new SocialEvent("POST_LIKED", userId, postId, null));
+        }
+    }
+
+    public void unlikePost(Long userId, Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        if (post.getLikes().remove(userId)) {
+            postRepository.save(post);
+            kafkaTemplate.send("social-events", new SocialEvent("POST_UNLIKED", userId, postId, null));
         }
     }
 
@@ -73,35 +82,84 @@ public class SocialService {
         follow.setFollowedId(followedId);
         followRepository.save(follow);
 
-        kafkaTemplate.send("social-events", new SocialEvent("USER_FOLLOWED", followerId, followedId));
+        kafkaTemplate.send("social-events", new SocialEvent("USER_FOLLOWED", followerId, followedId, null));
+        createFollowerActivity(followerId, followedId);
+    }
+
+    public void unfollow(Long followerId, Long followedId) {
+        followRepository.deleteByFollowerIdAndFollowedId(followerId, followedId);
+        kafkaTemplate.send("social-events", new SocialEvent("USER_UNFOLLOWED", followerId, followedId, null));
     }
 
     public List<Post> getPostsByUserId(Long userId) {
         return postRepository.findByUserId(userId);
     }
 
+    public Post getPostById(Long postId) {
+        return postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+    }
+
     public List<Comment> getCommentsByPostId(Long postId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-        return post.getComments().stream().collect(Collectors.toList());
+        return commentRepository.findByPostId(postId);
     }
 
-    public void followUser(Long followerId, Long followedId) {
-        follow(followerId, followedId);
+    public List<Post> getPostsWithActivity(Long userId) {
+        List<Post> posts = postRepository.findByUserId(userId);
+        for (Post post : posts) {
+            long commentCount = commentRepository.countByPostId(post.getId());
+            int likeCount = post.getLikes().size();
+            post.setCommentCount(commentCount);
+            post.setLikeCount(likeCount);
+        }
+        return posts;
     }
 
-    public void unfollowUser(Long followerId, Long followedId) {
-        followRepository.deleteByFollowerIdAndFollowedId(followerId, followedId);
-        kafkaTemplate.send("social-events", new SocialEvent("USER_UNFOLLOWED", followerId, followedId));
+    public void likeComment(Long userId, Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+        if (comment.getLikes().add(userId)) {
+            commentRepository.save(comment);
+            kafkaTemplate.send("social-events", new SocialEvent("COMMENT_LIKED", userId, comment.getPost().getId(), commentId));
+        }
     }
 
-    public void unlikePost(Long userId, Long postId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+    public void unlikeComment(Long userId, Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
 
-        if (post.getLikes().remove(userId)) {
-            postRepository.save(post);
-            kafkaTemplate.send("social-events", new SocialEvent("POST_UNLIKED", userId, postId));
+        if (comment.getLikes().remove(userId)) {
+            commentRepository.save(comment);
+            kafkaTemplate.send("social-events", new SocialEvent("COMMENT_UNLIKED", userId, comment.getPost().getId(), commentId));
+        }
+    }
+
+    public List<SocialEvent> getFollowerActivity(Long userId) {
+        List<Long> followers = followRepository.findFollowersByFollowedId(userId);
+        List<SocialEvent> followerActivities = new ArrayList<>();
+
+        for (Long followerId : followers) {
+            List<Post> followerPosts = postRepository.findRecentPostsByUserId(followerId);
+            for (Post post : followerPosts) {
+                followerActivities.add(new SocialEvent("FOLLOWER_POST", followerId, post.getId(), null));
+            }
+            
+            List<Comment> followerComments = commentRepository.findRecentCommentsByUserId(followerId);
+            for (Comment comment : followerComments) {
+                followerActivities.add(new SocialEvent("FOLLOWER_COMMENT", followerId, comment.getPost().getId(), comment.getId()));
+            }
+        }
+
+        followerActivities.sort(Comparator.comparing(SocialEvent::getTimestamp).reversed());
+
+        return followerActivities;
+    }
+
+    private void createFollowerActivity(Long followerId, Long followedId) {
+        Post latestPost = postRepository.findTopByUserIdOrderByCreatedAtDesc(followedId);
+        if (latestPost != null) {
+            kafkaTemplate.send("social-events", new SocialEvent("FOLLOWER_ACTIVITY", followerId, latestPost.getId(), null));
         }
     }
 }

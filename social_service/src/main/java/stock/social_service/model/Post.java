@@ -35,6 +35,12 @@ public class Post {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @Transient
+    private long commentCount;
+
+    @Transient
+    private int likeCount;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -44,5 +50,13 @@ public class Post {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public void setCommentCount(long commentCount) {
+        this.commentCount = commentCount;
+    }
+
+    public void setLikeCount(int likeCount) {
+        this.likeCount = likeCount;
     }
 }

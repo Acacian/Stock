@@ -1,15 +1,20 @@
 package stock.newsfeed_service.kafka;
 
+import java.time.LocalDateTime;
+
 public class SocialEvent {
     private String type;
     private Long userId;
     private Long postId;
     private Long commentId;
+    private LocalDateTime timestamp;
 
-    // Constructors, getters, and setters
-    public SocialEvent() {}
+    public SocialEvent() {
+        this.timestamp = LocalDateTime.now();
+    }
 
     public SocialEvent(String type, Long userId, Long postId, Long commentId) {
+        this();
         this.type = type;
         this.userId = userId;
         this.postId = postId;
@@ -25,4 +30,6 @@ public class SocialEvent {
     public void setPostId(Long postId) { this.postId = postId; }
     public Long getCommentId() { return commentId; }
     public void setCommentId(Long commentId) { this.commentId = commentId; }
+    public LocalDateTime getTimestamp() { return timestamp; }
+    public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
 }

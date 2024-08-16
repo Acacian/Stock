@@ -104,4 +104,37 @@ class IntegrationTest {
             assertTrue(post.getLikes().contains(2L));
         });
     }
+    
+    @Test
+    @Transactional
+    void shouldGetPostsWithActivity() {
+        // User 1 creates a post
+        HttpEntity<Map<String, Object>> postRequest = new HttpEntity<>(Map.of(
+            "userId", 1L,
+            "content", "Test post"
+        ));
+        ResponseEntity<Post> postResponse = restTemplate.postForEntity("/api/social/posts", postRequest, Post.class);
+        Long postId = postResponse.getBody().getId();
+
+        // User 2 likes the post
+        restTemplate.postForEntity("/api/social/posts/" + postId + "/likes?userId=2", null, Void.class);
+
+        // User 3 comments on the post
+        HttpEntity<Map<String, Object>> commentRequest = new HttpEntity<>(Map.of(
+            "userId", 3L,
+            "content", "Test comment"
+        ));
+        restTemplate.postForEntity("/api/social/posts/" + postId + "/comments", commentRequest, Comment.class);
+
+        // Get posts with activity
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            ResponseEntity<Post[]> getPostsResponse = restTemplate.getForEntity("/api/social/posts/1/with-activity", Post[].class);
+            assertEquals(HttpStatus.OK, getPostsResponse.getStatusCode());
+            Post[] posts = getPostsResponse.getBody();
+            assertNotNull(posts);
+            assertEquals(1, posts.length);
+            assertEquals(1, posts[0].getLikeCount());
+            assertEquals(1, posts[0].getCommentCount());
+        });
+    }
 }

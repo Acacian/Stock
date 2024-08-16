@@ -1,0 +1,9 @@
+.App {
+  text-align: center;
+  padding: 20px;
+}
+
+.user-auth input, .user-auth button {
+  margin: 10px;
+  padding: 5px;
+}
