@@ -1,0 +1,36 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: API-GATEWAY
+  cloud:
+    gateway:
+      routes:
+        - id: newsfeed_service
+          uri: lb://NEWSFEED-SERVICE
+          predicates:
+            - Path=/api/newsfeed/**
+        - id: social_service
+          uri: lb://SOCIAL-SERVICE
+          predicates:
+            - Path=/api/social/**
+        - id: user_service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/auth/**
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka-server:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    preferIpAddress: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

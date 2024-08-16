@@ -1,9 +1,35 @@
 .App {
-  text-align: center;
+  max-width: 400px;
+  margin: 0 auto;
   padding: 20px;
 }
 
-.user-auth input, .user-auth button {
-  margin: 10px;
+.user-auth form {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-auth input {
+  margin-bottom: 10px;
   padding: 5px;
+}
+
+.user-auth button {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+.user-profile {
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  padding: 10px;
+  margin-top: 20px;
 }

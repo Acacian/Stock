@@ -63,6 +63,16 @@ services:
     networks:
       - my-network
 
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka_server/Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - my-network
+
   user-service:
     build:
       context: .
@@ -74,10 +84,12 @@ services:
       - db
       - redis
       - kafka
+      - eureka-server
     env_file:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     networks:
       - my-network
 
@@ -91,10 +103,12 @@ services:
     depends_on:
       - db
       - kafka
+      - eureka-server
     env_file:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     networks:
       - my-network
 
@@ -108,10 +122,30 @@ services:
     depends_on:
       - db
       - kafka
+      - eureka-server
     env_file:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    networks:
+      - my-network
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api_gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+      - user-service
+      - newsfeed-service
+      - social-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-prod}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     networks:
       - my-network
 
@@ -121,6 +155,8 @@ services:
       dockerfile: Dockerfile.test
     container_name: integration-test
     depends_on:
+      - eureka-server
+      - api-gateway
       - user-service
       - newsfeed-service
       - social-service
@@ -129,6 +165,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/${DB_NAME:-Stock}
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_VAR:-DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     networks:
       - my-network
     env_file:

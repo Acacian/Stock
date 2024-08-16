@@ -1,0 +1,59 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: USER-SERVICE
+  datasource:
+    url: jdbc:mysql://${SERVERS:db}:3306/Stock
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9093}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  mail:
+    host: smtp.gmail.com
+    username: ${SENDING_EMAIL}
+    port: 587
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  main:
+    allow-bean-definition-overriding: true
+
+server:
+  port: 8082
+
+logging:
+  level:
+    '[org.springframework]': DEBUG
+
+app:
+  domain: ${APP_DOMAIN}
+  jwt:
+    secret: ${JWT_SECRET:defaultSecretKey}
+    expirationInMs: 3600000
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka-server:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    preferIpAddress: true

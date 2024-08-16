@@ -28,8 +28,8 @@ ENV PATH=${GRADLE_HOME}/bin:${PATH}
 
 # 빌드 결과물 및 필요한 파일 복사
 COPY --from=build /app/newsfeed_service/build/libs/*.jar app.jar
-COPY --from=build /app/newsfeed_service/src/main/resources/application.properties /app/
-COPY --from=build /app/newsfeed_service/src/test/resources/application-test.properties /app/
+COPY --from=build /app/newsfeed_service/src/main/resources/application.yml /app/
+COPY --from=build /app/newsfeed_service/src/test/resources/application-test.yml /app/
 COPY --from=build /app/gradlew /app/
 COPY --from=build /app/gradle /app/gradle
 COPY --from=build /app/.env /app/.env

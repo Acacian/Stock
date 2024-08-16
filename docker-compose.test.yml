@@ -10,13 +10,16 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://stock-db-1:3306/${DB_NAME:-Stock_Test}
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_VAR:-TEST_DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     env_file:
       - .env
     depends_on:
       - db
+      - eureka-server
       - user-service
       - newsfeed-service
       - social-service
+      - api-gateway
     networks:
       - my-network
     command: ["./gradlew", "integrationTest", "--info"]
@@ -63,6 +66,15 @@ services:
     networks:
       - my-network
 
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka_server/Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - my-network
+
   user-service:
     build:
       context: .
@@ -75,10 +87,15 @@ services:
         condition: service_started
       kafka:
         condition: service_started
+      eureka-server:
+        condition: service_started
     networks:
       - my-network
     env_file:
       - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-test}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     command: ["java", "-jar", "-Dspring.profiles.active=${MODE:-test}", "app.jar"]
 
   newsfeed-service:
@@ -93,10 +110,15 @@ services:
         condition: service_started
       kafka:
         condition: service_started
+      eureka-server:
+        condition: service_started
     networks:
       - my-network
     env_file:
       - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-test}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     command: ["java", "-jar", "-Dspring.profiles.active=${MODE:-test}", "app.jar"]
 
   social-service:
@@ -109,10 +131,28 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      eureka-server:
+        condition: service_started
     networks:
       - my-network
     env_file:
       - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-test}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    command: ["java", "-jar", "-Dspring.profiles.active=${MODE:-test}", "app.jar"]
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api_gateway/Dockerfile
+    depends_on:
+      - eureka-server
+    networks:
+      - my-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-test}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     command: ["java", "-jar", "-Dspring.profiles.active=${MODE:-test}", "app.jar"]
 
 networks:
