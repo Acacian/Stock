@@ -1,49 +1,45 @@
-const API_URL = '/api/auth';
+const API_URL = process.env.REACT_APP_API_URL || '/api/auth';
 
-export const registerUser = async (userData) => {
-  const response = await fetch(`${API_URL}/register`, {
+const handleResponse = async (response) => {
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'An error occurred');
+  }
+  return response.json();
+};
+
+export const registerUser = (userData) => 
+  fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(userData)
-  });
-  return response.json();
-};
+  }).then(handleResponse);
 
-export const loginUser = async (email, password) => {
-  const response = await fetch(`${API_URL}/login`, {
+export const loginUser = (email, password) => 
+  fetch(`${API_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
-  });
-  return response.json();
-};
+  }).then(handleResponse);
 
-export const logoutUser = async (token) => {
-  await fetch(`${API_URL}/logout`, {
+export const logoutUser = (token) => 
+  fetch(`${API_URL}/logout`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` }
   });
-};
 
-export const updatePassword = async (userId, oldPassword, newPassword) => {
-  const response = await fetch(`${API_URL}/password`, {
+export const updatePassword = (userId, oldPassword, newPassword) => 
+  fetch(`${API_URL}/password`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, oldPassword, newPassword })
-  });
-  return response.json();
-};
+  }).then(handleResponse);
 
-export const getUserProfile = async (userId) => {
-  const response = await fetch(`${API_URL}/users/${userId}`);
-  return response.json();
-};
+export const getUserProfile = (userId) => 
+  fetch(`${API_URL}/users/${userId}`).then(handleResponse);
 
-export const updateUserProfile = async (userId, profileData) => {
-  const response = await fetch(`${API_URL}/users/${userId}`, {
+export const updateUserProfile = (userId, profileData) => 
+  fetch(`${API_URL}/users/${userId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(profileData)
-  });
-  return response.json();
-};
+    body: profileData
+  }).then(handleResponse);

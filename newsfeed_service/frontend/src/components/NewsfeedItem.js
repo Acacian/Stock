@@ -1,18 +1,25 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { FollowButton } from './FollowButton';
 
 const NewsfeedItem = ({ item, currentUserId }) => {
+  const handleAction = (action, targetId) => {
+    window.parent.postMessage({
+      type: 'SOCIAL_ACTION',
+      action: action,
+      targetId: targetId,
+      userId: currentUserId
+    }, '*');
+  };
+
   const renderContent = () => {
     switch (item.type) {
       case 'POST':
         return (
           <div>
             <p>{item.content}</p>
-            <button onClick={() => handleLike(item.id)}>
+            <button onClick={() => handleAction('LIKE', item.id)}>
               Like ({item.likeCount})
             </button>
-            <button onClick={() => handleComment(item.id)}>
+            <button onClick={() => handleAction('COMMENT', item.id)}>
               Comment ({item.commentCount})
             </button>
           </div>
@@ -20,25 +27,23 @@ const NewsfeedItem = ({ item, currentUserId }) => {
       case 'COMMENT':
         return (
           <p>
-            <Link to={`/profile/${item.userId}`}>{item.userName}</Link> commented on a post: "{item.content}"
+            <strong>{item.userName}</strong> commented on a post: "{item.content}"
           </p>
         );
       case 'LIKE':
         return (
           <p>
-            <Link to={`/profile/${item.userId}`}>{item.userName}</Link> liked a post
+            <strong>{item.userName}</strong> liked a post
           </p>
         );
       case 'FOLLOW':
         return (
           <p>
-            <Link to={`/profile/${item.userId}`}>{item.userName}</Link> followed <Link to={`/profile/${item.targetUserId}`}>{item.targetUserName}</Link>
+            <strong>{item.userName}</strong> followed <strong>{item.targetUserName}</strong>
             {item.targetUserId !== currentUserId && (
-              <FollowButton
-                currentUserId={currentUserId}
-                targetUserId={item.targetUserId}
-                initialIsFollowing={false}
-              />
+              <button onClick={() => handleAction('FOLLOW', item.targetUserId)}>
+                Follow
+              </button>
             )}
           </p>
         );
@@ -50,7 +55,7 @@ const NewsfeedItem = ({ item, currentUserId }) => {
   return (
     <div className="newsfeed-item">
       {renderContent()}
-      <small>Posted at: {new Date(item.timestamp).toLocaleString()}</small>
+      <small>{new Date(item.timestamp).toLocaleString()}</small>
     </div>
   );
 };

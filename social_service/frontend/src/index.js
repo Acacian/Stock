@@ -1,17 +1,39 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import React, { useEffect, useState } from 'react';
+import Feed from './components/Feed';
+import './App.css';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+function App() {
+  const [user, setUser] = useState(null);
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.origin === 'http://localhost:3001') {
+        if (event.data.type === 'USER_LOGGED_IN') {
+          setUser(event.data.user);
+        } else if (event.data.type === 'USER_LOGGED_OUT') {
+          setUser(null);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
+  return (
+    <div className="App">
+      <h1>Social Feed</h1>
+      {user ? <Feed userId={user.id} /> : <p>Please log in to view your social feed.</p>}
+    </div>
+  );
+}
+
+export default App;

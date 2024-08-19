@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { registerUser } from '../services/UserApi';
+import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
   const [userData, setUserData] = useState({
@@ -7,6 +8,8 @@ const Register = () => {
     email: '',
     password: ''
   });
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
@@ -14,16 +17,21 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await registerUser(userData);
       alert('Registration successful. Please check your email for verification.');
+      navigate('/login');
     } catch (error) {
       console.error('Registration failed:', error);
+      setError('Registration failed. Please try again.');
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      <h2>Register</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <input
         type="text"
         name="name"

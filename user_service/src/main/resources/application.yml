@@ -15,7 +15,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
   mail:
     host: smtp.gmail.com
@@ -28,8 +28,13 @@ spring:
           auth: true
           starttls:
             enable: true
-  main:
-    allow-bean-definition-overriding: true
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:kafka:9092}
+    consumer:
+      group-id: ${spring.application.name}-group
+      auto-offset-reset: earliest
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   cloud:
     openfeign:
       client:
@@ -43,7 +48,8 @@ server:
 
 logging:
   level:
-    '[org.springframework]': DEBUG
+    '[org.springframework]': INFO
+    '[stock.user_service]': DEBUG
     'stock.user_service.client.NewsfeedServiceClient': DEBUG
 
 app:
