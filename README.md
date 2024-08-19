@@ -4,16 +4,7 @@
 
 ## 💻 사용된 프레임워크 및 아키텍처
 
-- ![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)
-- ![Spring Boot](https://img.shields.io/badge/Spring_Boot-F2F4F9?style=for-the-badge&logo=spring-boot)
-- ![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white)
-- ![MSA](https://img.shields.io/badge/MSA-00897B?style=for-the-badge)
-- ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-- ![Zookeeper](https://img.shields.io/badge/Zookeeper-FF4B4B?style=for-the-badge&logo=apache-zookeeper&logoColor=white)
-- ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white)
-- ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-- ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-- ![Eureka](https://img.shields.io/badge/Eureka-4DB33D?style=for-the-badge&logo=spring&logoColor=white)
+![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-F2F4F9?style=for-the-badge&logo=spring-boot) ![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white) ![MSA](https://img.shields.io/badge/MSA-00897B?style=for-the-badge) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Zookeeper](https://img.shields.io/badge/Zookeeper-FF4B4B?style=for-the-badge&logo=apache-zookeeper&logoColor=white) ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white) ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white) ![Eureka](https://img.shields.io/badge/Eureka-4DB33D?style=for-the-badge&logo=spring&logoColor=white)
 
 ## 🚪 포트 구성
 
@@ -29,16 +20,17 @@
 - **User Service**: `8082`
 - **Newsfeed Service**: `8083`
 - **Social Service**: `8084`
-- **Frontend**: `3001`,`3002`,`3003`
+- **Stock Service**: `8085`
+- **Frontend**: `3001`,`3002`,`3003`,`3004`
 
-> **참고:** 비용 절감을 위해 `auth-service`는 `user-service`와 통합되었습니다.
+> **참고:** 비용 절감을 위해 기존의 `auth-service`는 `user-service`와 통합되었습니다.
 
 ## 🛠 문제 해결 (Troubleshooting)
 
 - RestApi를 통한 통신 시, 요청과 응답이 즉시 이루어지지 않아 성능 저하가 발생  
   > Kafka를 사용한 이벤트 통신을 통해 비동기 처리로 성능을 개선
 
-- 로그아웃을 RefreshToken을 제거하는 방식으로 구현했으나, 토큰 재사용 방지 및 만료 관리가 어려워  
+- 로그아웃을 RefreshToken을 제거하는 방식으로 구현했으나, 토큰을 재사용해서 로그인할 수 있었음
   > Redis를 사용한 블랙리스트 방식으로 개선하여 토큰 관리 효율성과 보안을 강화
 
 

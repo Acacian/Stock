@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   jenkins:
     image: jenkins/jenkins:lts
@@ -26,24 +28,24 @@ services:
       "
 
   db:
-      image: mysql:8.0.39
-      container_name: db
-      environment:
-        MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-        MYSQL_DATABASE: ${DB_NAME}
-        MYSQL_LOG_CONSOLE: "true"
-      ports:
-        - "3306:3306"
-      volumes:
-        - mysql-data:/var/lib/mysql
-        - ./erd.sql:/docker-entrypoint-initdb.d/erd.sql
-      networks:
-        - my-network
-      healthcheck:
-        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-        interval: 20s
-        timeout: 10s
-        retries: 10
+    image: mysql:8.0.39
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_LOG_CONSOLE: "true"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./erd.sql:/docker-entrypoint-initdb.d/erd.sql
+    networks:
+      - my-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
 
   redis:
     image: redis:6.2
@@ -160,6 +162,29 @@ services:
     networks:
       - my-network
 
+  stock-service:
+    build:
+      context: .
+      dockerfile: stock_service/Dockerfile
+    container_name: stock-service
+    ports:
+      - "8085:8085"
+      - "3004:80"  
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-prod}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    networks:
+      - my-network
+
   api-gateway:
     build:
       context: .
@@ -172,6 +197,7 @@ services:
       - user-service
       - newsfeed-service
       - social-service
+      - stock-service
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/

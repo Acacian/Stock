@@ -54,7 +54,6 @@ subprojects {
     if (project.name != 'eureka_server') {
         dependencies {
             implementation "io.github.resilience4j:resilience4j-spring-boot2:${resilience4jVersion}"
-            implementation "io.github.resilience4j:resilience4j-all:${resilience4jVersion}"
             implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
             implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
         }

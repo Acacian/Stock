@@ -28,6 +28,13 @@ spring:
           filters:
             - AuthenticationFilter
             - RateLimitingFilter
+        - id: stock_service
+          uri: lb://STOCK-SERVICE
+          predicates:
+            - Path=/api/stocks/**
+          filters:
+            - AuthenticationFilter
+            - RateLimitingFilter
 
 eureka:
   client:
