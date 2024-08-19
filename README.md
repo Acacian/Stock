@@ -24,11 +24,12 @@
 - **Redis**: `6379`
 - **Kafka**: `9092`
 - **Zookeeper**: `2181`
+- **Jenkins**: `8080`
 - **API Gateway**: `8081`
 - **User Service**: `8082`
 - **Newsfeed Service**: `8083`
 - **Social Service**: `8084`
-- **Jenkins**: `8010`
+- **Frontend**: `3001`,`3002`,`3003`
 
 > **참고:** 비용 절감을 위해 `auth-service`는 `user-service`와 통합되었습니다.
 

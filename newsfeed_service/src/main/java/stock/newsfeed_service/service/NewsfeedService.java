@@ -2,12 +2,11 @@ package stock.newsfeed_service.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import stock.newsfeed_service.repository.UserRepository;
+import stock.newsfeed_service.kafka.UserEvent;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -41,6 +40,34 @@ public class NewsfeedService {
         addActivityToPostOwner(postId, message);
     }
 
+    public void addUnlikeActivity(Long userId, Long postId) {
+        String message = String.format("User %d unliked post %d", userId, postId);
+        addActivityToFollowers(userId, message);
+        addActivityToPostOwner(postId, message);
+    }
+
+    public void addCommentLikeActivity(Long userId, Long postId, Long commentId) {
+        String message = String.format("User %d liked a comment on post %d", userId, postId);
+        addActivityToFollowers(userId, message);
+        addActivityToPostOwner(postId, message);
+    }
+
+    public void removeCommentLikeActivity(Long userId, Long postId, Long commentId) {
+        String message = String.format("User %d unliked a comment on post %d", userId, postId);
+        addActivityToFollowers(userId, message);
+        addActivityToPostOwner(postId, message);
+    }
+
+    public void addFollowerActivity(String type, Long userId, Long targetId) {
+        String message;
+        if ("FOLLOWER_POST".equals(type)) {
+            message = String.format("Your follower (User %d) created a new post: %d", userId, targetId);
+        } else {
+            message = String.format("Your follower (User %d) commented on post %d", userId, targetId);
+        }
+        addActivityToNewsfeed(userId, message);
+    }
+
     private void addActivityToFollowers(Long userId, String message) {
         Set<Long> followers = userRepository.getFollowers(userId);
         for (Long followerId : followers) {
@@ -71,58 +98,21 @@ public class NewsfeedService {
         }
     }
 
-    @KafkaListener(topics = "social-events", groupId = "newsfeed-service-group")
-    public void listenSocialEvents(Map<String, Object> event) {
-        String type = (String) event.get("type");
-        Long userId = Long.valueOf(event.get("userId").toString());
-        Long targetId = Long.valueOf(event.get("targetId").toString());
-        Long additionalId = event.get("additionalId") != null ? Long.valueOf(event.get("additionalId").toString()) : null;
-
-        switch (type) {
-            case "POST_CREATED":
-                addPostActivity(userId, targetId);
-                break;
-            case "COMMENT_ADDED":
-                addCommentActivity(userId, targetId, additionalId);
-                break;
-            case "POST_LIKED":
-                addLikeActivity(userId, targetId);
-                break;
-            case "COMMENT_LIKED":
-                addCommentLikeActivity(userId, targetId, additionalId);
-                break;
-            case "COMMENT_UNLIKED":
-                removeCommentLikeActivity(userId, targetId, additionalId);
-                break;
-            case "FOLLOWER_POST":
-            case "FOLLOWER_COMMENT":
-                addFollowerActivity(type, userId, targetId);
-                break;
-            case "USER_FOLLOWED":
-                addFollowActivity(userId, targetId);
-                break;
-        }
-    }
-
-    private void addCommentLikeActivity(Long userId, Long postId, Long commentId) {
-        String message = String.format("User %d liked a comment on post %d", userId, postId);
-        addActivityToFollowers(userId, message);
-        addActivityToPostOwner(postId, message);
-    }
-
-    private void removeCommentLikeActivity(Long userId, Long postId, Long commentId) {
-        String message = String.format("User %d unliked a comment on post %d", userId, postId);
-        addActivityToFollowers(userId, message);
-        addActivityToPostOwner(postId, message);
-    }
-
-    private void addFollowerActivity(String type, Long userId, Long targetId) {
-        String message;
-        if ("FOLLOWER_POST".equals(type)) {
-            message = String.format("Your follower (User %d) created a new post: %d", userId, targetId);
-        } else {
-            message = String.format("Your follower (User %d) commented on post %d", userId, targetId);
-        }
+    public void processUserenticatedUser(Long userId) {
+        // 인증된 사용자 처리 로직
+        String message = String.format("User %d has been Userenticated", userId);
         addActivityToNewsfeed(userId, message);
+    }
+
+    public void processProfileUpdated(UserEvent event) {
+        // 프로필 업데이트 처리 로직
+        String message = String.format("User %d updated their profile", event.getUserId());
+        addActivityToNewsfeed(event.getUserId(), message);
+    }
+
+    public void processPasswordUpdated(UserEvent event) {
+        // 비밀번호 업데이트 처리 로직
+        String message = String.format("User %d updated their password", event.getUserId());
+        addActivityToNewsfeed(event.getUserId(), message);
     }
 }

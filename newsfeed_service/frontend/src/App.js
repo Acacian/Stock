@@ -1,45 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import Newsfeed from './components/Newsfeed';
 
 function App() {
-  const [newsfeed, setNewsfeed] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetchNewsfeed();
+    // User Service로부터의 메시지 리스닝
+    window.addEventListener('message', (event) => {
+      if (event.origin !== 'http://localhost:3001') {
+        if (event.data.type === 'USER_LOGGED_IN') {
+          setUser(event.data.user);
+        }
+      }
+    });
+
+    // 로컬 스토리지에서 사용자 정보 가져오기
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
   }, []);
 
-  const fetchNewsfeed = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/newsfeed');
-      if (!response.ok) {
-        throw new Error('Failed to fetch newsfeed');
-      }
-      const data = await response.json();
-      setNewsfeed(data);
-      setLoading(false);
-    } catch (error) {
-      setError('Error fetching newsfeed: ' + error.message);
-      setLoading(false);
-    }
-  };
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-
   return (
-    <div className="App">
-      <h1>Newsfeed</h1>
-      <div className="newsfeed">
-        {newsfeed.map((item, index) => (
-          <div key={index} className="newsfeed-item">
-            <p>{item.content}</p>
-            <small>Posted at: {new Date(item.timestamp).toLocaleString()}</small>
-          </div>
-        ))}
-      </div>
+    <div>
+      <h1>Newsfeed Service</h1>
+      {user ? <Newsfeed user={user} /> : <p>Please log in to view your newsfeed.</p>}
     </div>
   );
 }

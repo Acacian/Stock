@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,6 +24,7 @@ import stock.user_service.security.JwtTokenProvider;
 import stock.user_service.kafka.AuthEvent;
 import stock.user_service.security.UserPrincipal;
 import stock.user_service.dto.UpdateProfileRequest;
+import stock.user_service.client.NewsfeedServiceClient;
 import java.time.LocalDateTime;
 
 @Service
@@ -44,13 +44,13 @@ public class AuthService {
     private JwtTokenProvider tokenProvider;
 
     @Autowired
-    private KafkaTemplate<String, AuthEvent> kafkaTemplate;
-
-    @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private NewsfeedServiceClient newsfeedServiceClient;
 
     @Value("${spring.profiles.active:}")
     private String activeProfile;
@@ -67,7 +67,7 @@ public class AuthService {
         user.setIntroduction(request.getIntroduction());
         User updatedUser = userRepository.save(user);
         
-        kafkaTemplate.send("user-events", new AuthEvent("PROFILE_UPDATED", id, user.getEmail()));
+        newsfeedServiceClient.profileUpdated(new AuthEvent("PROFILE_UPDATED", id, user.getEmail()));
         return updatedUser;
     }
 
@@ -91,8 +91,6 @@ public class AuthService {
 
         if ("test".equals(activeProfile)) {
             // 테스트 환경에서는 이메일 검증 패스
-            // savedUser.setEnabled(true);
-            // userRepository.save(savedUser);
         } else {
             String token = generateVerificationToken();
             redisTemplate.opsForValue().set("verification:" + token, savedUser.getEmail(), 24, TimeUnit.HOURS);
@@ -122,15 +120,15 @@ public class AuthService {
 
     public String authenticateUser(String email, String password) {
         try {
-            Authentication user_service = authenticationManager.authenticate(
+            Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
             );
 
-            String token = tokenProvider.generateToken(user_service);
-            UserPrincipal userPrincipal = (UserPrincipal) user_service.getPrincipal();
+            String token = tokenProvider.generateToken(authentication);
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             User user = userRepository.findByEmail(userPrincipal.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-            kafkaTemplate.send("user-events", new AuthEvent("USER_AUTHENTICATED", user.getId()));
+            newsfeedServiceClient.userAuthenticated(new AuthEvent("USER_AUTHENTICATED", user.getId()));
             logger.info("사용자 인증 성공: {}", email);
             return token;
         } catch (BadCredentialsException e) {
@@ -161,7 +159,7 @@ public class AuthService {
 
         String userTokenKey = "user_tokens:" + userId;
         redisTemplate.delete(userTokenKey);
-        kafkaTemplate.send("user-events", new AuthEvent("PASSWORD_UPDATED", user.getId()));
+        newsfeedServiceClient.passwordUpdated(new AuthEvent("PASSWORD_UPDATED", user.getId()));
         logger.info("사용자 ID: {}의 비밀번호 업데이트 및 모든 장치에서 로그아웃 처리 완료", userId);
     }
 

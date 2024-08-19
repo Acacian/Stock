@@ -31,27 +31,36 @@ subprojects {
     }
 
     dependencies {
-        implementation 'org.springframework.boot:spring-boot-starter-web'
-        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-        implementation 'org.springframework.kafka:spring-kafka'
-        implementation 'com.mysql:mysql-connector-j'
-        implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-        implementation 'redis.clients:jedis'
-        
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
         
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testImplementation 'org.junit.jupiter:junit-jupiter-api'
-        testImplementation 'org.springframework.kafka:spring-kafka-test'
-        testImplementation 'org.awaitility:awaitility:4.2.0'
-        testImplementation 'org.mockito:mockito-core'
-        testImplementation 'org.mockito:mockito-junit-jupiter'
-        testImplementation 'org.testcontainers:junit-jupiter:1.17.6'
-        testImplementation 'org.testcontainers:kafka:1.17.6'
         
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-        implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    }
+
+    // Eureka Server와 API Gateway를 제외한 모든 서브프로젝트에 적용
+    if (!project.name.equals('eureka_server') && !project.name.equals('api_gateway')) {
+        dependencies {
+            implementation 'io.github.resilience4j:resilience4j-spring-boot2:1.7.0'
+            implementation 'io.github.resilience4j:resilience4j-all:1.7.0'
+            implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+            implementation 'org.springframework.boot:spring-boot-starter-web'
+            implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+            implementation 'org.springframework.kafka:spring-kafka'
+            implementation 'com.mysql:mysql-connector-j'
+            implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+            implementation 'redis.clients:jedis'
+            implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+            
+            testImplementation 'org.springframework.kafka:spring-kafka-test'
+            testImplementation 'org.awaitility:awaitility:4.2.0'
+            testImplementation 'org.mockito:mockito-core'
+            testImplementation 'org.mockito:mockito-junit-jupiter'
+            testImplementation 'org.testcontainers:junit-jupiter:1.17.6'
+            testImplementation 'org.testcontainers:kafka:1.17.6'
+        }
     }
 
     test {

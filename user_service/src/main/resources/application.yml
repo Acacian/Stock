@@ -13,14 +13,9 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-  kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9093}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
   mail:
     host: smtp.gmail.com
@@ -35,6 +30,13 @@ spring:
             enable: true
   main:
     allow-bean-definition-overriding: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
 
 server:
   port: 8082
@@ -42,6 +44,7 @@ server:
 logging:
   level:
     '[org.springframework]': DEBUG
+    'stock.user_service.client.NewsfeedServiceClient': DEBUG
 
 app:
   domain: ${APP_DOMAIN}
@@ -57,3 +60,32 @@ eureka:
     register-with-eureka: true
   instance:
     preferIpAddress: true
+
+feign:
+  client:
+    config:
+      default:
+        loggerLevel: basic
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      newsfeedService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+  retry:
+    instances:
+      newsfeedService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.io.IOException

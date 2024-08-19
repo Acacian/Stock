@@ -1,7 +1,6 @@
 package stock.social_service.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import stock.social_service.model.Post;
 import stock.social_service.model.Comment;
@@ -10,6 +9,7 @@ import stock.social_service.repository.PostRepository;
 import stock.social_service.repository.CommentRepository;
 import stock.social_service.repository.FollowRepository;
 import stock.social_service.kafka.SocialEvent;
+import stock.social_service.client.NewsfeedServiceClient;
 
 import java.util.*;
 
@@ -26,7 +26,7 @@ public class SocialService {
     private FollowRepository followRepository;
 
     @Autowired
-    private KafkaTemplate<String, SocialEvent> kafkaTemplate;
+    private NewsfeedServiceClient newsfeedServiceClient;
 
     public Post createPost(Long userId, String content) {
         Post post = new Post();
@@ -34,7 +34,7 @@ public class SocialService {
         post.setContent(content);
         Post savedPost = postRepository.save(post);
         
-        kafkaTemplate.send("social-events", new SocialEvent("POST_CREATED", userId, savedPost.getId(), null));
+        newsfeedServiceClient.postCreated(new SocialEvent("POST_CREATED", userId, savedPost.getId(), null));
         return savedPost;
     }
 
@@ -48,7 +48,7 @@ public class SocialService {
         comment.setContent(content);
         Comment savedComment = commentRepository.save(comment);
 
-        kafkaTemplate.send("social-events", new SocialEvent("COMMENT_ADDED", userId, postId, savedComment.getId()));
+        newsfeedServiceClient.commentCreated(new SocialEvent("COMMENT_ADDED", userId, postId, savedComment.getId()));
         return savedComment;
     }
 
@@ -58,7 +58,7 @@ public class SocialService {
 
         if (post.getLikes().add(userId)) {
             postRepository.save(post);
-            kafkaTemplate.send("social-events", new SocialEvent("POST_LIKED", userId, postId, null));
+            newsfeedServiceClient.postLiked(new SocialEvent("POST_LIKED", userId, postId, null));
         }
     }
 
@@ -68,7 +68,7 @@ public class SocialService {
 
         if (post.getLikes().remove(userId)) {
             postRepository.save(post);
-            kafkaTemplate.send("social-events", new SocialEvent("POST_UNLIKED", userId, postId, null));
+            newsfeedServiceClient.postUnliked(new SocialEvent("POST_UNLIKED", userId, postId, null));
         }
     }
 
@@ -82,13 +82,13 @@ public class SocialService {
         follow.setFollowedId(followedId);
         followRepository.save(follow);
 
-        kafkaTemplate.send("social-events", new SocialEvent("USER_FOLLOWED", followerId, followedId, null));
+        newsfeedServiceClient.userFollowed(new SocialEvent("USER_FOLLOWED", followerId, followedId, null));
         createFollowerActivity(followerId, followedId);
     }
 
     public void unfollow(Long followerId, Long followedId) {
         followRepository.deleteByFollowerIdAndFollowedId(followerId, followedId);
-        kafkaTemplate.send("social-events", new SocialEvent("USER_UNFOLLOWED", followerId, followedId, null));
+        newsfeedServiceClient.userUnfollowed(new SocialEvent("USER_UNFOLLOWED", followerId, followedId, null));
     }
 
     public List<Post> getPostsByUserId(Long userId) {
@@ -121,7 +121,7 @@ public class SocialService {
 
         if (comment.getLikes().add(userId)) {
             commentRepository.save(comment);
-            kafkaTemplate.send("social-events", new SocialEvent("COMMENT_LIKED", userId, comment.getPost().getId(), commentId));
+            newsfeedServiceClient.commentLiked(new SocialEvent("COMMENT_LIKED", userId, comment.getPost().getId(), commentId));
         }
     }
 
@@ -131,7 +131,7 @@ public class SocialService {
 
         if (comment.getLikes().remove(userId)) {
             commentRepository.save(comment);
-            kafkaTemplate.send("social-events", new SocialEvent("COMMENT_UNLIKED", userId, comment.getPost().getId(), commentId));
+            newsfeedServiceClient.commentUnliked(new SocialEvent("COMMENT_UNLIKED", userId, comment.getPost().getId(), commentId));
         }
     }
 
@@ -159,7 +159,7 @@ public class SocialService {
     private void createFollowerActivity(Long followerId, Long followedId) {
         Post latestPost = postRepository.findTopByUserIdOrderByCreatedAtDesc(followedId);
         if (latestPost != null) {
-            kafkaTemplate.send("social-events", new SocialEvent("FOLLOWER_ACTIVITY", followerId, latestPost.getId(), null));
+            newsfeedServiceClient.followerActivity(new SocialEvent("FOLLOWER_ACTIVITY", followerId, latestPost.getId(), null));
         }
     }
 }

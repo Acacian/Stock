@@ -4,7 +4,7 @@ spring:
   application:
     name: SOCIAL-SERVICE
   datasource:
-    url: jdbc:mysql://${SERVERS:stock-db-1}:3306/Stock_Test
+    url: jdbc:mysql://${SERVERS:db}:3306/Stock_Test
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${TEST_DB_PASSWORD}
   jpa:
@@ -13,11 +13,13 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-  kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9093}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
 
 server:
   port: 8084
@@ -26,6 +28,7 @@ logging:
   level:
     '[org.springframework]': INFO
     '[stock.social]': DEBUG
+    'stock.social_service.client.NewsfeedServiceClient': DEBUG
 
 eureka:
   client:
@@ -35,3 +38,32 @@ eureka:
     register-with-eureka: true
   instance:
     preferIpAddress: true
+
+feign:
+  client:
+    config:
+      default:
+        loggerLevel: basic
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      newsfeedService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+  retry:
+    instances:
+      newsfeedService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.io.IOException

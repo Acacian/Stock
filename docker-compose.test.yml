@@ -2,15 +2,10 @@ version: '3.8'
 
 services:
   integration-test:
-    build:
-      context: .
-      dockerfile: Dockerfile.test
-    environment:
-      - SPRING_PROFILES_ACTIVE=${MODE:-test}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://stock-db-1:3306/${DB_NAME:-Stock_Test}
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_VAR:-TEST_DB_PASSWORD}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    image: gradle:7.6-jdk17
+    working_dir: /app
+    volumes:
+      - .:/app
     env_file:
       - .env
     depends_on:
@@ -27,8 +22,8 @@ services:
   db:
     image: mysql:8.0.39
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD_VAR:-TEST_DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME:-Stock_Test}
+      MYSQL_ROOT_PASSWORD: ${TEST_DB_PASSWORD}
+      MYSQL_DATABASE: Stock_Test
     ports:
       - "3306:3306"
     healthcheck:

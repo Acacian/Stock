@@ -1,14 +1,9 @@
-version: '3.8'
-
 services:
   jenkins:
-    build:
-      context: .
-      dockerfile: Dockerfile.jenkins
-    privileged: true
+    image: jenkins/jenkins:lts
     user: root
     ports:
-      - 8010:8010
+      - 8080:8080
       - 50000:50000
     container_name: jenkins
     volumes:
@@ -16,24 +11,42 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - my-network
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    command: >
+      bash -c "
+      apt-get update && 
+      apt-get -y install apt-transport-https ca-certificates curl gnupg2 software-properties-common && 
+      curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && 
+      add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/debian $$(lsb_release -cs) stable\" && 
+      apt-get update && 
+      apt-get -y install docker-ce-cli &&
+      chown -R jenkins:jenkins /var/jenkins_home &&
+      su jenkins -c \"/usr/local/bin/jenkins.sh\"
+      "
 
   db:
-    image: mysql:8.0.39
-    container_name: mysql-db
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD_VAR:-DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME:-Stock}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-      - ./erd.sql:/docker-entrypoint-initdb.d/erd.sql
-    networks:
-      - my-network
+      image: mysql:8.0.39
+      container_name: db
+      environment:
+        MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+        MYSQL_DATABASE: ${DB_NAME}
+      ports:
+        - "3306:3306"
+      volumes:
+        - mysql-data:/var/lib/mysql
+        - ./erd.sql:/docker-entrypoint-initdb.d/erd.sql
+      networks:
+        - my-network
+      healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
 
   redis:
     image: redis:6.2
-    container_name: redis-cache
+    container_name: redis
     ports:
       - "6379:6379"
     networks:
@@ -80,13 +93,20 @@ services:
     container_name: user-service
     ports:
       - "8082:8082"
+      - "3001:80"  
     depends_on:
-      - db
-      - redis
-      - kafka
-      - eureka-server
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
     env_file:
       - .env
+    volumes:
+      - user-uploads:/app/uploads/profile_images
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
@@ -100,10 +120,14 @@ services:
     container_name: newsfeed-service
     ports:
       - "8083:8083"
+      - "3002:80"  
     depends_on:
-      - db
-      - kafka
-      - eureka-server
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
     env_file:
       - .env
     environment:
@@ -119,10 +143,14 @@ services:
     container_name: social-service
     ports:
       - "8084:8084"
+      - "3003:80"  
     depends_on:
-      - db
-      - kafka
-      - eureka-server
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
     env_file:
       - .env
     environment:
@@ -137,7 +165,7 @@ services:
       dockerfile: api_gateway/Dockerfile
     container_name: api-gateway
     ports:
-      - "8080:8080"
+      - "8081:8081"
     depends_on:
       - eureka-server
       - user-service
@@ -148,34 +176,13 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     networks:
       - my-network
-
-  integration-test:
-    build:
-      context: .
-      dockerfile: Dockerfile.test
-    container_name: integration-test
-    depends_on:
-      - eureka-server
-      - api-gateway
-      - user-service
-      - newsfeed-service
-      - social-service
-    environment:
-      - SPRING_PROFILES_ACTIVE=${MODE:-prod}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/${DB_NAME:-Stock}
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_VAR:-DB_PASSWORD}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    networks:
-      - my-network
-    env_file:
-      - .env
-    command: ["./gradlew", "integrationTest"]
 
 volumes:
   mysql-data:
   jenkins_home:
+  user-uploads:
 
 networks:
   my-network:
+    name: stock_my-network
     driver: bridge
