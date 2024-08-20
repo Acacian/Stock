@@ -20,24 +20,24 @@ public class StockPriceScheduler {
 
     @Scheduled(cron = "0 0 18 * * MON-FRI")
     public void updateDailyStockPrices() {
-        List<Stock> stocks = stockService.getAllStocks();
-        for (Stock stock : stocks) {
+        List<Stock> stocksToUpdate = stockService.getStocksToUpdate();
+        for (Stock stock : stocksToUpdate) {
             stockPriceService.fetchAndSaveStockPrices(stock, 1);
         }
     }
 
     @Scheduled(cron = "0 0 1 * * SUN")
     public void updateWeeklyStockPrices() {
-        List<Stock> stocks = stockService.getAllStocks();
-        for (Stock stock : stocks) {
+        List<Stock> stocksToUpdate = stockService.getStocksToUpdate();
+        for (Stock stock : stocksToUpdate) {
             stockPriceService.fetchAndSaveStockPrices(stock, 7);
         }
     }
 
     @Scheduled(cron = "0 0 2 1 * ?")
     public void updateMonthlyStockPrices() {
-        List<Stock> stocks = stockService.getAllStocks();
-        for (Stock stock : stocks) {
+        List<Stock> stocksToUpdate = stockService.getStocksToUpdate();
+        for (Stock stock : stocksToUpdate) {
             stockPriceService.fetchAndSaveStockPrices(stock, 30);
         }
     }

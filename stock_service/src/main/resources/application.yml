@@ -13,13 +13,18 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+        jdbc:
+          batch_size: 50
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS:kafka:9092}
     consumer:
       group-id: ${spring.application.name}-group
       auto-offset-reset: earliest
+      enable-auto-commit: false
     producer:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    listener:
+      ack-mode: MANUAL_IMMEDIATE
   cloud:
     openfeign:
       client:
@@ -27,6 +32,11 @@ spring:
           default:
             connectTimeout: 5000
             readTimeout: 5000
+  web:
+    resources:
+      static-locations: classpath:/static/,file:/app/static/
+  mvc:
+    throw-exception-if-no-handler-found: true
 
 server:
   port: 8085
@@ -35,6 +45,7 @@ logging:
   level:
     '[org.springframework]': INFO
     '[stock.stock_service]': DEBUG
+    '[org.apache.kafka]': WARN
 
 eureka:
   client:

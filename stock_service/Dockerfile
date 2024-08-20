@@ -1,25 +1,28 @@
+# Backend build stage
 FROM gradle:7.6-jdk17 AS backend-build
 WORKDIR /app
 COPY . .
 RUN chmod +x ./gradlew
 RUN ./gradlew :stock_service:build -x test --no-daemon
 
-FROM node:14 AS frontend-build
+# Frontend build stage
+FROM node:16 AS frontend-build
 WORKDIR /app/frontend
 COPY stock_service/frontend/package*.json ./
 RUN npm install
-RUN npm install react-router-dom
+RUN npm install react-router-dom @mui/material @mui/icons-material recharts axios
 RUN npm install --save-dev @babel/plugin-proposal-private-property-in-object
 COPY stock_service/frontend .
 RUN npm run build
 
+# Final stage
 FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y default-mysql-client wget unzip nginx
 
 COPY --from=backend-build /app/stock_service/build/libs/*.jar app.jar
-COPY --from=frontend-build /app/frontend/build /usr/share/nginx/html
+COPY --from=frontend-build /app/frontend/build /app/static
 
 COPY stock_service/src/main/resources/application.yml /app/
 COPY stock_service/src/test/resources/application-test.yml /app/
@@ -46,4 +49,6 @@ CMD if [ "$MODE" = "test" ]; then \
         export SPRING_DATASOURCE_PASSWORD=$DB_PASSWORD; \
     fi && \
     nginx && \
-    java -jar -Dspring.profiles.active=$SPRING_PROFILES_ACTIVE app.jar
+    java -jar -Dspring.profiles.active=$SPRING_PROFILES_ACTIVE \
+    -Dspring.web.resources.static-locations=file:/app/static \
+    app.jar

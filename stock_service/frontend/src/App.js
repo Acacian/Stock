@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Feed from './components/Feed';
-import PostDetail from './components/PostDetail';
+import StockList from './components/StockList';
+import StockDetail from './components/StockDetail';
+import StockDiscussion from './components/StockDiscussion';
 import './App.css';
 
 function App() {
@@ -24,8 +25,9 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<Feed user={user} />} />
-          <Route path="/post/:postId" element={<PostDetail user={user} />} />
+          <Route path="/" element={<StockList />} />
+          <Route path="/stock/:stockId" element={<StockDetail />} />
+          <Route path="/stock/:stockId/discussion" element={<StockDiscussion user={user} />} />
         </Routes>
       </div>
     </Router>
