@@ -1,4 +1,4 @@
-package stock.user_service.client;
+package stock.stock_service.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import stock.user_service.model.Stock;
+import stock.stock_service.model.Stock;
 
 @FeignClient(name = "stock-service")
 public interface StockServiceClient {

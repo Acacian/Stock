@@ -10,7 +10,6 @@ import stock.stock_service.repository.StockRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class StockService {

@@ -5,20 +5,33 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.cache.annotation.Cacheable;
 import stock.stock_service.model.Stock;
 import stock.stock_service.model.StockPrice;
 import stock.stock_service.repository.StockPriceRepository;
 import stock.stock_service.repository.StockRepository;
+import stock.stock_service.exception.InvalidDataException;
+import stock.stock_service.util.ApiRateLimiter;
 
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class StockPriceService {
+
+    private static final Logger log = LoggerFactory.getLogger(StockPriceService.class);
+    private static final String NAVER_STOCK_API_URL = "https://fchart.stock.naver.com/sise.nhn?symbol={symbol}&timeframe=day&count={count}&requestType=0";
 
     @Autowired
     private StockPriceRepository stockPriceRepository;
@@ -29,13 +42,25 @@ public class StockPriceService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private static final String NAVER_STOCK_API_URL = "https://fchart.stock.naver.com/sise.nhn?symbol={symbol}&timeframe=day&count={count}&requestType=0";
+    @Autowired
+    private ApiRateLimiter apiRateLimiter;
 
     @Transactional
+    @Retryable(value = {RestClientException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void fetchAndSaveStockPrices(Stock stock, int count) {
+        log.info("Fetching stock data for {} with count {}", stock.getCode(), count);
+        apiRateLimiter.checkRateLimit();
         String apiResponse = restTemplate.getForObject(NAVER_STOCK_API_URL, String.class, stock.getCode(), count);
         List<StockPrice> stockPrices = parseApiResponse(apiResponse, stock);
         stockPriceRepository.saveAll(stockPrices);
+        log.info("Saved {} price records for stock {}", stockPrices.size(), stock.getCode());
+    }
+
+    @Cacheable(value = "stockPrices", key = "#stock.code + '-' + #count")
+    public List<StockPrice> fetchAndParseStockPrices(Stock stock, int count) {
+        log.info("Fetching and parsing stock data for {} with count {}", stock.getCode(), count);
+        String apiResponse = restTemplate.getForObject(NAVER_STOCK_API_URL, String.class, stock.getCode(), count);
+        return parseApiResponse(apiResponse, stock);
     }
 
     private List<StockPrice> parseApiResponse(String apiResponse, Stock stock) {
@@ -45,30 +70,51 @@ public class StockPriceService {
             if (line.startsWith("<item data=")) {
                 String[] data = line.split("\\|");
                 if (data.length == 6) {
-                    StockPrice stockPrice = new StockPrice();
-                    stockPrice.setStock(stock);
-                    stockPrice.setDate(LocalDate.parse(data[0].substring(11), DateTimeFormatter.BASIC_ISO_DATE));
-                    stockPrice.setOpenPrice(Integer.parseInt(data[1]));
-                    stockPrice.setHighPrice(Integer.parseInt(data[2]));
-                    stockPrice.setLowPrice(Integer.parseInt(data[3]));
-                    stockPrice.setClosePrice(Integer.parseInt(data[4]));
-                    stockPrice.setVolume(Long.parseLong(data[5].replace("\"/>", "")));
-                    
-                    // Calculate change amount and rate
-                    StockPrice previousPrice = stockPriceRepository.findFirstByStockOrderByDateDesc(stock).orElse(null);
-                    if (previousPrice != null) {
-                        int changeAmount = stockPrice.getClosePrice() - previousPrice.getClosePrice();
-                        double changeRate = (double) changeAmount / previousPrice.getClosePrice() * 100;
-                        stockPrice.setChangeAmount(changeAmount);
-                        stockPrice.setChangeRate(changeRate);
-                    }
-                    
-                    stockPrice.setTradingAmount(stockPrice.getClosePrice() * stockPrice.getVolume());
+                    StockPrice stockPrice = createStockPrice(stock, data);
+                    validateStockPrice(stockPrice);
                     stockPrices.add(stockPrice);
                 }
             }
         }
         return stockPrices;
+    }
+
+    private StockPrice createStockPrice(Stock stock, String[] data) {
+        StockPrice stockPrice = new StockPrice();
+        stockPrice.setStock(stock);
+        stockPrice.setDate(LocalDate.parse(data[0].substring(11), DateTimeFormatter.BASIC_ISO_DATE));
+        stockPrice.setOpenPrice(Integer.parseInt(data[1]));
+        stockPrice.setHighPrice(Integer.parseInt(data[2]));
+        stockPrice.setLowPrice(Integer.parseInt(data[3]));
+        stockPrice.setClosePrice(Integer.parseInt(data[4]));
+        stockPrice.setVolume(Long.parseLong(data[5].replace("\"/>", "")));
+        
+        StockPrice previousPrice = stockPriceRepository.findFirstByStockOrderByDateDesc(stock).orElse(null);
+        if (previousPrice != null) {
+            int changeAmount = stockPrice.getClosePrice() - previousPrice.getClosePrice();
+            double changeRate = (double) changeAmount / previousPrice.getClosePrice() * 100;
+            stockPrice.setChangeAmount(changeAmount);
+            stockPrice.setChangeRate(changeRate);
+        }
+        
+        stockPrice.setTradingAmount(stockPrice.getClosePrice() * stockPrice.getVolume());
+        return stockPrice;
+    }
+
+    private void validateStockPrice(StockPrice stockPrice) {
+        if (stockPrice.getOpenPrice() <= 0 || stockPrice.getClosePrice() <= 0) {
+            throw new InvalidDataException("Invalid price data for stock: " + stockPrice.getStock().getCode());
+        }
+    }
+
+    public List<StockPrice> fetchMultipleStocks(List<Stock> stocks, int count) {
+        List<CompletableFuture<List<StockPrice>>> futures = stocks.stream()
+            .map(stock -> CompletableFuture.supplyAsync(() -> fetchAndParseStockPrices(stock, count)))
+            .collect(Collectors.toList());
+
+        return futures.stream()
+            .flatMap(future -> future.join().stream())
+            .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

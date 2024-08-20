@@ -1,5 +1,7 @@
 package stock.stock_service.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +15,9 @@ import java.util.List;
 public interface StockRepository extends JpaRepository<Stock, Long> {
     Optional<Stock> findByCode(String code);
 
-    List<Stock> findByMarketType(Stock.MarketType marketType);
+    Page<Stock> findByMarketType(Stock.MarketType marketType, Pageable pageable);
+
+    Page<Stock> findByNameContainingOrCodeContaining(String name, String code, Pageable pageable);
 
     @Query("SELECT s FROM Stock s WHERE " +
            "(:name IS NULL OR s.name LIKE %:name%) AND " +
@@ -22,13 +26,14 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
            "(:sector IS NULL OR s.sector = :sector) AND " +
            "(:minMarketCap IS NULL OR s.marketCap >= :minMarketCap) AND " +
            "(:maxMarketCap IS NULL OR s.marketCap <= :maxMarketCap)")
-    List<Stock> searchStocks(
+    Page<Stock> searchStocks(
             @Param("name") String name,
             @Param("code") String code,
             @Param("marketType") Stock.MarketType marketType,
             @Param("sector") String sector,
             @Param("minMarketCap") Long minMarketCap,
-            @Param("maxMarketCap") Long maxMarketCap
+            @Param("maxMarketCap") Long maxMarketCap,
+            Pageable pageable
     );
 
     List<Stock> findTop100ByMarketTypeOrderByMarketCapDesc(Stock.MarketType marketType);
