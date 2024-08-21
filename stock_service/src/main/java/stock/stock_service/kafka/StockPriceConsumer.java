@@ -25,7 +25,7 @@ public class StockPriceConsumer {
     }
 
     @KafkaListener(topics = "stock-prices", groupId = "stock-price-group", 
-                   containerFactory = "kafkaListenerContainerFactory")
+    containerFactory = "stockPriceKafkaListenerContainerFactory")
     @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void consume(List<ConsumerRecord<String, StockPrice>> records, 
                         Acknowledgment acknowledgment,

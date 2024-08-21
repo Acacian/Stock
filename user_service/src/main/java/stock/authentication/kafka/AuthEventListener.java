@@ -11,7 +11,7 @@ public class AuthEventListener {
     @Autowired
     private AuthService authService;
 
-    @KafkaListener(topics = "user-events", groupId = "auth-service-group")
+    @KafkaListener(topics = "user-events", groupId = "auth-service-group",  containerFactory = "authEventKafkaListenerContainerFactory")
     public void listen(AuthEvent event) {
         switch(event.getType()) {
             case "USER_AUTHENTICATED":

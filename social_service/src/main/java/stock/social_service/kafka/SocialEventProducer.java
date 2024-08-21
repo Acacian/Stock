@@ -7,9 +7,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class SocialEventProducer {
     @Autowired
-    private KafkaTemplate<String, SocialEvent> kafkaTemplate;
+    private KafkaTemplate<String, SocialEvent> socialEventKafkaTemplate;
 
     public void sendSocialEvent(SocialEvent event) {
-        kafkaTemplate.send("social-events", event);
+        socialEventKafkaTemplate.send("social-events", event);
     }
 }

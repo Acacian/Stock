@@ -15,6 +15,10 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         jdbc:
           batch_size: 50
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS:kafka:9092}
     consumer:
@@ -25,6 +29,11 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     listener:
       ack-mode: MANUAL_IMMEDIATE
+    streams:
+      application-id: ${spring.application.name}-streams
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.springframework.kafka.support.serializer.JsonSerde
   cloud:
     openfeign:
       client:
@@ -37,6 +46,10 @@ spring:
       static-locations: classpath:/static/,file:/app/static/
   mvc:
     throw-exception-if-no-handler-found: true
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000  # 10 minutes
 
 server:
   port: 8085

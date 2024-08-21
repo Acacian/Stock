@@ -7,9 +7,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthEventProducer {
     @Autowired
-    private KafkaTemplate<String, AuthEvent> kafkaTemplate;
+    private KafkaTemplate<String, AuthEvent> authEventKafkaTemplate;
 
     public void sendAuthEvent(AuthEvent event) {
-        kafkaTemplate.send("auth-events", event);
+        authEventKafkaTemplate.send("auth-events", event);
     }
 }

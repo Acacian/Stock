@@ -1,6 +1,8 @@
 package stock.social_service.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import stock.social_service.service.SocialService;
@@ -19,7 +21,7 @@ public class SocialController {
 
     @PostMapping("/posts")
     public ResponseEntity<?> createPost(@RequestBody Post post) {
-        return ResponseEntity.ok(socialService.createPost(post.getUserId(), post.getContent()));
+        return ResponseEntity.ok(socialService.createPost(post.getUserId(), post.getContent(), post.getStockId()));
     }
 
     @PostMapping("/posts/{postId}/comments")
@@ -33,9 +35,21 @@ public class SocialController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/posts/{postId}/likes")
+    public ResponseEntity<?> unlikePost(@PathVariable Long postId, @RequestParam Long userId) {
+        socialService.unlikePost(userId, postId);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/follow")
-    public ResponseEntity<?> follow(@RequestParam Long followerId, @RequestParam Long followedId) {
-        socialService.follow(followerId, followedId);
+    public ResponseEntity<?> follow(@RequestParam Long followerId, @RequestParam Long followeeId) {
+        socialService.follow(followerId, followeeId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/unfollow")
+    public ResponseEntity<?> unfollow(@RequestParam Long followerId, @RequestParam Long followeeId) {
+        socialService.unfollow(followerId, followeeId);
         return ResponseEntity.ok().build();
     }
 
@@ -49,20 +63,25 @@ public class SocialController {
         return ResponseEntity.ok(socialService.getPostById(postId));
     }
 
+    @GetMapping("/posts/{postId}/comments")
+    public ResponseEntity<List<Comment>> getCommentsByPostId(@PathVariable Long postId) {
+        return ResponseEntity.ok(socialService.getCommentsByPostId(postId));
+    }
+
     @GetMapping("/posts/{userId}/with-activity")
     public ResponseEntity<List<Post>> getPostsWithActivity(@PathVariable Long userId) {
         return ResponseEntity.ok(socialService.getPostsWithActivity(userId));
     }
 
-        @PostMapping("/comments/{commentId}/likes")
+    @PostMapping("/comments/{commentId}/likes")
     public ResponseEntity<?> likeComment(@PathVariable Long commentId, @RequestParam Long userId) {
-        socialService.likeComment(commentId, userId);
+        socialService.likeComment(userId, commentId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/comments/{commentId}/likes")
     public ResponseEntity<?> unlikeComment(@PathVariable Long commentId, @RequestParam Long userId) {
-        socialService.unlikeComment(commentId, userId);
+        socialService.unlikeComment(userId, commentId);
         return ResponseEntity.ok().build();
     }
 
@@ -70,5 +89,20 @@ public class SocialController {
     public ResponseEntity<List<SocialEvent>> getFollowerActivity(@PathVariable Long userId) {
         List<SocialEvent> followerActivity = socialService.getFollowerActivity(userId);
         return ResponseEntity.ok(followerActivity);
+    }
+
+    @GetMapping("/posts/stock/{stockId}")
+    public ResponseEntity<Page<Post>> getPostsByStock(
+            @PathVariable Long stockId,
+            Pageable pageable) {
+        return ResponseEntity.ok(socialService.getPostsByStock(stockId, pageable));
+    }
+
+    @GetMapping("/posts/search")
+    public ResponseEntity<Page<Post>> searchPosts(
+            @RequestParam String query,
+            @RequestParam List<Long> userIds,
+            Pageable pageable) {
+        return ResponseEntity.ok(socialService.searchPosts(query, userIds, pageable));
     }
 }

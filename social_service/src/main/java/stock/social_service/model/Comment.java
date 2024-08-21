@@ -16,23 +16,19 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id")
-    private Post post;
-
     @Column(name = "user_id")
     private Long userId;
 
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
     @ElementCollection
     @CollectionTable(name = "comment_likes", joinColumns = @JoinColumn(name = "comment_id"))
     @Column(name = "user_id")
     private Set<Long> likes = new HashSet<>();
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {

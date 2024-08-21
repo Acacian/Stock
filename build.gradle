@@ -90,6 +90,8 @@ subprojects {
     // Eureka Server와 API Gateway를 제외한 모든 서브프로젝트에 적용
     if (!(project.name in ['eureka_server', 'api_gateway'])) {
         dependencies {
+            implementation 'org.apache.kafka:kafka-streams'
+
             implementation 'org.springframework.boot:spring-boot-starter-web'
             implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
             implementation 'org.springframework.kafka:spring-kafka'

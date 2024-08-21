@@ -26,6 +26,7 @@ import stock.user_service.security.UserPrincipal;
 import stock.user_service.dto.UpdateProfileRequest;
 import stock.user_service.client.NewsfeedServiceClient;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Service
 public class AuthService {
@@ -157,8 +158,16 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
+        // 사용자의 모든 토큰을 무효화
         String userTokenKey = "user_tokens:" + userId;
-        redisTemplate.delete(userTokenKey);
+        Set<String> userTokens = redisTemplate.opsForSet().members(userTokenKey);
+        if (userTokens != null) {
+            for (String token : userTokens) {
+                redisTemplate.opsForValue().set("token:" + token, "blacklisted", 24, TimeUnit.HOURS);
+            }
+        }
+        redisTemplate.delete(userTokenKey); // 기존 토큰 목록 삭제
+
         newsfeedServiceClient.passwordUpdated(new AuthEvent("PASSWORD_UPDATED", user.getId()));
         logger.info("사용자 ID: {}의 비밀번호 업데이트 및 모든 장치에서 로그아웃 처리 완료", userId);
     }

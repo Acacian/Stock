@@ -10,7 +10,8 @@ public class NewsfeedEventListener {
     @Autowired
     private NewsfeedService newsfeedService;
 
-    @KafkaListener(topics = "user-events", groupId = "newsfeed-service-group")
+    @KafkaListener(topics = "user-events", groupId = "newsfeed-service-group", 
+                   containerFactory = "newsfeedKafkaListenerContainerFactory")
     public void listenUserEvents(UserEvent event) {
         switch (event.getType()) {
             case "USER_FOLLOWED":
@@ -20,7 +21,8 @@ public class NewsfeedEventListener {
         }
     }
 
-    @KafkaListener(topics = "social-events", groupId = "newsfeed-service-group")
+    @KafkaListener(topics = "social-events", groupId = "newsfeed-service-group",
+                   containerFactory = "newsfeedKafkaListenerContainerFactory")
     public void listenSocialEvents(SocialEvent event) {
         switch (event.getType()) {
             case "POST_CREATED":
@@ -34,5 +36,11 @@ public class NewsfeedEventListener {
                 break;
             // 다른 소셜 이벤트 처리...
         }
+    }
+
+    @KafkaListener(topics = "stock-events", groupId = "newsfeed-service-group", 
+                   containerFactory = "newsfeedKafkaListenerContainerFactory")
+    public void listenStockEvents(StockEvent event) {
+        newsfeedService.addStockPriceChangeActivity(event);
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import stock.stock_service.model.Stock;
 import stock.stock_service.model.StockPrice;
 import stock.stock_service.repository.StockPriceRepository;
@@ -56,11 +57,16 @@ public class StockPriceService {
         log.info("Saved {} price records for stock {}", stockPrices.size(), stock.getCode());
     }
 
-    @Cacheable(value = "stockPrices", key = "#stock.code + '-' + #count")
+    @Cacheable(value = "stock-prices", key = "#stock.code + ':' + #count")
     public List<StockPrice> fetchAndParseStockPrices(Stock stock, int count) {
         log.info("Fetching and parsing stock data for {} with count {}", stock.getCode(), count);
         String apiResponse = restTemplate.getForObject(NAVER_STOCK_API_URL, String.class, stock.getCode(), count);
         return parseApiResponse(apiResponse, stock);
+    }
+
+    @CacheEvict(value = "stock-prices", key = "#stock.code + ':' + #count")
+    public void evictStockPricesCache(Stock stock, int count) {
+        log.info("Evicting cache for stock {} with count {}", stock.getCode(), count);
     }
 
     private List<StockPrice> parseApiResponse(String apiResponse, Stock stock) {

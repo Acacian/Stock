@@ -80,7 +80,6 @@ public class StockService {
 
     @Transactional(readOnly = true)
     public List<Stock> getStocksToUpdate() {
-        // KOSPI와 KOSDAQ의 상위 100개 종목을 반환
         List<Stock> kospiStocks = stockRepository.findTop100ByMarketTypeOrderByMarketCapDesc(Stock.MarketType.KOSPI);
         List<Stock> kosdaqStocks = stockRepository.findTop100ByMarketTypeOrderByMarketCapDesc(Stock.MarketType.KOSDAQ);
         

@@ -17,8 +17,8 @@ public class Follow {
     @Column(name = "follower_id")
     private Long followerId;
 
-    @Column(name = "followed_id")
-    private Long followedId;
+    @Column(name = "followee_id")
+    private Long followeeId;
 
     private LocalDateTime createdAt;
 

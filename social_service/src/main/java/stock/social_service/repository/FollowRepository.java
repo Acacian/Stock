@@ -6,9 +6,9 @@ import stock.social_service.model.Follow;
 import java.util.List;
 
 public interface FollowRepository extends JpaRepository<Follow, Long> {
-    boolean existsByFollowerIdAndFollowedId(Long followerId, Long followedId);
-    void deleteByFollowerIdAndFollowedId(Long followerId, Long followedId);
+    boolean existsByFollowerIdAndFolloweeId(Long followerId, Long followeeId);
+    void deleteByFollowerIdAndFolloweeId(Long followerId, Long followeeId);
     
-    @Query("SELECT f.followerId FROM Follow f WHERE f.followedId = :followedId")
-    List<Long> findFollowersByFollowedId(Long followedId);
+    @Query("SELECT f.followerId FROM Follow f WHERE f.followeeId = :followeeId")
+    List<Long> findFollowersByFolloweeId(Long followeeId);
 }

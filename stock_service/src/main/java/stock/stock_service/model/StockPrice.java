@@ -1,10 +1,14 @@
 package stock.stock_service.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "stock_prices")
+@Getter
+@Setter
 public class StockPrice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +45,7 @@ public class StockPrice {
     @Column(name = "trading_amount")
     private long tradingAmount;
 
+    // Constructors
     public StockPrice() {}
 
     public StockPrice(Stock stock, LocalDate date, int openPrice, int highPrice, int lowPrice, int closePrice, long volume) {
@@ -62,95 +67,6 @@ public class StockPrice {
         this.lowPrice = lowPrice;
         this.closePrice = closePrice;
         this.volume = volume;
-        this.tradingAmount = tradingAmount;
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Stock getStock() {
-        return stock;
-    }
-
-    public void setStock(Stock stock) {
-        this.stock = stock;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public int getOpenPrice() {
-        return openPrice;
-    }
-
-    public void setOpenPrice(int openPrice) {
-        this.openPrice = openPrice;
-    }
-
-    public int getHighPrice() {
-        return highPrice;
-    }
-
-    public void setHighPrice(int highPrice) {
-        this.highPrice = highPrice;
-    }
-
-    public int getLowPrice() {
-        return lowPrice;
-    }
-
-    public void setLowPrice(int lowPrice) {
-        this.lowPrice = lowPrice;
-    }
-
-    public int getClosePrice() {
-        return closePrice;
-    }
-
-    public void setClosePrice(int closePrice) {
-        this.closePrice = closePrice;
-    }
-
-    public long getVolume() {
-        return volume;
-    }
-
-    public void setVolume(long volume) {
-        this.volume = volume;
-    }
-
-    public int getChangeAmount() {
-        return changeAmount;
-    }
-
-    public void setChangeAmount(int changeAmount) {
-        this.changeAmount = changeAmount;
-    }
-
-    public double getChangeRate() {
-        return changeRate;
-    }
-
-    public void setChangeRate(double changeRate) {
-        this.changeRate = changeRate;
-    }
-
-    public long getTradingAmount() {
-        return tradingAmount;
-    }
-
-    public void setTradingAmount(long tradingAmount) {
         this.tradingAmount = tradingAmount;
     }
 }

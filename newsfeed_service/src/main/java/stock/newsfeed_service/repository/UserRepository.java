@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Repository
@@ -21,5 +22,15 @@ public class UserRepository {
     public Long getPostOwner(Long postId) {
         String sql = "SELECT user_id FROM posts WHERE id = ?";
         return jdbcTemplate.queryForObject(sql, Long.class, postId);
+    }
+
+    public List<Long> getAllUserIds() {
+        String sql = "SELECT id FROM users";
+        return jdbcTemplate.queryForList(sql, Long.class);
+    }
+
+    public String getUserName(Long userId) {
+        String sql = "SELECT name FROM users WHERE id = ?";
+        return jdbcTemplate.queryForObject(sql, String.class, userId);
     }
 }

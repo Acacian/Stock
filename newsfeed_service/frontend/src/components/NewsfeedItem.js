@@ -15,11 +15,11 @@ const NewsfeedItem = ({ item, currentUserId }) => {
       case 'POST':
         return (
           <div>
-            <p>{item.content}</p>
-            <button onClick={() => handleAction('LIKE', item.id)}>
+            <p><strong>{item.userName}</strong> posted: {item.content}</p>
+            <button onClick={() => handleAction('LIKE', item.targetId)}>
               Like ({item.likeCount})
             </button>
-            <button onClick={() => handleAction('COMMENT', item.id)}>
+            <button onClick={() => handleAction('COMMENT', item.targetId)}>
               Comment ({item.commentCount})
             </button>
           </div>
@@ -40,8 +40,8 @@ const NewsfeedItem = ({ item, currentUserId }) => {
         return (
           <p>
             <strong>{item.userName}</strong> followed <strong>{item.targetUserName}</strong>
-            {item.targetUserId !== currentUserId && (
-              <button onClick={() => handleAction('FOLLOW', item.targetUserId)}>
+            {item.targetId !== currentUserId && (
+              <button onClick={() => handleAction('FOLLOW', item.targetId)}>
                 Follow
               </button>
             )}

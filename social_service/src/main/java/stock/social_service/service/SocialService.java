@@ -1,6 +1,8 @@
 package stock.social_service.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import stock.social_service.model.Post;
 import stock.social_service.model.Comment;
@@ -28,10 +30,11 @@ public class SocialService {
     @Autowired
     private NewsfeedServiceClient newsfeedServiceClient;
 
-    public Post createPost(Long userId, String content) {
+    public Post createPost(Long userId, String content, Long stockId) {
         Post post = new Post();
         post.setUserId(userId);
         post.setContent(content);
+        post.setStockId(stockId);
         Post savedPost = postRepository.save(post);
         
         newsfeedServiceClient.postCreated(new SocialEvent("POST_CREATED", userId, savedPost.getId(), null));
@@ -44,9 +47,11 @@ public class SocialService {
 
         Comment comment = new Comment();
         comment.setUserId(userId);
-        comment.setPost(post);
         comment.setContent(content);
         Comment savedComment = commentRepository.save(comment);
+
+        post.getComments().add(savedComment);
+        postRepository.save(post);
 
         newsfeedServiceClient.commentCreated(new SocialEvent("COMMENT_ADDED", userId, postId, savedComment.getId()));
         return savedComment;
@@ -72,23 +77,23 @@ public class SocialService {
         }
     }
 
-    public void follow(Long followerId, Long followedId) {
-        if (followRepository.existsByFollowerIdAndFollowedId(followerId, followedId)) {
+    public void follow(Long followerId, Long followeeId) {
+        if (followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId)) {
             throw new RuntimeException("Already following this user");
         }
 
         Follow follow = new Follow();
         follow.setFollowerId(followerId);
-        follow.setFollowedId(followedId);
+        follow.setFolloweeId(followeeId);
         followRepository.save(follow);
 
-        newsfeedServiceClient.userFollowed(new SocialEvent("USER_FOLLOWED", followerId, followedId, null));
-        createFollowerActivity(followerId, followedId);
+        newsfeedServiceClient.userFollowed(new SocialEvent("USER_FOLLOWED", followerId, followeeId, null));
+        createFollowerActivity(followerId, followeeId);
     }
 
-    public void unfollow(Long followerId, Long followedId) {
-        followRepository.deleteByFollowerIdAndFollowedId(followerId, followedId);
-        newsfeedServiceClient.userUnfollowed(new SocialEvent("USER_UNFOLLOWED", followerId, followedId, null));
+    public void unfollow(Long followerId, Long followeeId) {
+        followRepository.deleteByFollowerIdAndFolloweeId(followerId, followeeId);
+        newsfeedServiceClient.userUnfollowed(new SocialEvent("USER_UNFOLLOWED", followerId, followeeId, null));
     }
 
     public List<Post> getPostsByUserId(Long userId) {
@@ -101,16 +106,15 @@ public class SocialService {
     }
 
     public List<Comment> getCommentsByPostId(Long postId) {
-        return commentRepository.findByPostId(postId);
+        Post post = getPostById(postId);
+        return post.getComments();
     }
 
     public List<Post> getPostsWithActivity(Long userId) {
         List<Post> posts = postRepository.findByUserId(userId);
         for (Post post : posts) {
-            long commentCount = commentRepository.countByPostId(post.getId());
-            int likeCount = post.getLikes().size();
-            post.setCommentCount(commentCount);
-            post.setLikeCount(likeCount);
+            post.setCommentCount(post.getComments().size());
+            post.setLikeCount(post.getLikes().size());
         }
         return posts;
     }
@@ -121,7 +125,7 @@ public class SocialService {
 
         if (comment.getLikes().add(userId)) {
             commentRepository.save(comment);
-            newsfeedServiceClient.commentLiked(new SocialEvent("COMMENT_LIKED", userId, comment.getPost().getId(), commentId));
+            newsfeedServiceClient.commentLiked(new SocialEvent("COMMENT_LIKED", userId, comment.getId(), commentId));
         }
     }
 
@@ -131,12 +135,12 @@ public class SocialService {
 
         if (comment.getLikes().remove(userId)) {
             commentRepository.save(comment);
-            newsfeedServiceClient.commentUnliked(new SocialEvent("COMMENT_UNLIKED", userId, comment.getPost().getId(), commentId));
+            newsfeedServiceClient.commentUnliked(new SocialEvent("COMMENT_UNLIKED", userId, comment.getId(), commentId));
         }
     }
 
     public List<SocialEvent> getFollowerActivity(Long userId) {
-        List<Long> followers = followRepository.findFollowersByFollowedId(userId);
+        List<Long> followers = followRepository.findFollowersByFolloweeId(userId);
         List<SocialEvent> followerActivities = new ArrayList<>();
 
         for (Long followerId : followers) {
@@ -147,7 +151,7 @@ public class SocialService {
             
             List<Comment> followerComments = commentRepository.findRecentCommentsByUserId(followerId);
             for (Comment comment : followerComments) {
-                followerActivities.add(new SocialEvent("FOLLOWER_COMMENT", followerId, comment.getPost().getId(), comment.getId()));
+                followerActivities.add(new SocialEvent("FOLLOWER_COMMENT", followerId, comment.getId(), comment.getId()));
             }
         }
 
@@ -156,10 +160,18 @@ public class SocialService {
         return followerActivities;
     }
 
-    private void createFollowerActivity(Long followerId, Long followedId) {
-        Post latestPost = postRepository.findTopByUserIdOrderByCreatedAtDesc(followedId);
+    private void createFollowerActivity(Long followerId, Long followeeId) {
+        Post latestPost = postRepository.findTopByUserIdOrderByCreatedAtDesc(followeeId);
         if (latestPost != null) {
             newsfeedServiceClient.followerActivity(new SocialEvent("FOLLOWER_ACTIVITY", followerId, latestPost.getId(), null));
         }
+    }
+
+    public Page<Post> getPostsByStock(Long stockId, Pageable pageable) {
+        return postRepository.findByStockId(stockId, pageable);
+    }
+
+    public Page<Post> searchPosts(String query, List<Long> userIds, Pageable pageable) {
+        return postRepository.findByContentContainingOrUserIdIn(query, userIds, pageable);
     }
 }

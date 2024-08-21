@@ -12,8 +12,16 @@ spring:
     consumer:
       group-id: ${spring.application.name}-group
       auto-offset-reset: earliest
+      enable-auto-commit: false
     producer:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    listener:
+      ack-mode: MANUAL_IMMEDIATE
+    streams:
+      application-id: ${spring.application.name}-streams
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.springframework.kafka.support.serializer.JsonSerde
   cloud:
     openfeign:
       client:

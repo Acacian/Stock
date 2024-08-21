@@ -12,35 +12,24 @@ CREATE TABLE users (
     last_login_at DATETIME DEFAULT NULL
 ) COMMENT '사용자';
 
--- 포스트 테이블
+-- 포스트 테이블 (댓글 통합)
 CREATE TABLE posts (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
+    parent_id BIGINT DEFAULT NULL,
     content TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-) COMMENT '포스트';
-
--- 댓글 테이블
-CREATE TABLE comments (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    post_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
-    content TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES posts(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
-) COMMENT '댓글';
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (parent_id) REFERENCES posts(id)
+) COMMENT '포스트 및 댓글';
 
 -- 좋아요 테이블
 CREATE TABLE likes (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
     post_id BIGINT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY (user_id, post_id),
+    PRIMARY KEY (user_id, post_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (post_id) REFERENCES posts(id)
 ) COMMENT '좋아요';
@@ -61,13 +50,14 @@ CREATE TABLE stocks (
     code VARCHAR(20) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     market_type ENUM('KOSPI', 'KOSDAQ') NOT NULL,
+    sector VARCHAR(255),
+    market_cap BIGINT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) COMMENT '주식';
 
 -- 주식 가격 테이블
 CREATE TABLE stock_prices (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     stock_id BIGINT NOT NULL,
     date DATE NOT NULL,
     open_price INT NOT NULL,
@@ -75,35 +65,25 @@ CREATE TABLE stock_prices (
     low_price INT NOT NULL,
     close_price INT NOT NULL,
     volume BIGINT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY (stock_id, date),
+    change_amount INT,
+    change_rate DECIMAL(5,2),
+    trading_amount BIGINT,
+    PRIMARY KEY (stock_id, date),
     FOREIGN KEY (stock_id) REFERENCES stocks(id)
 ) COMMENT '주식 가격';
 
--- 관심 주식 테이블
-CREATE TABLE user_watchlist (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+-- 사용자 주식 관심 및 거래 테이블
+CREATE TABLE user_stocks (
     user_id BIGINT NOT NULL,
     stock_id BIGINT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY (user_id, stock_id),
+    watchlist BOOLEAN DEFAULT FALSE,
+    quantity INT DEFAULT 0,
+    average_price INT DEFAULT 0,
+    last_trade_date DATETIME,
+    PRIMARY KEY (user_id, stock_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (stock_id) REFERENCES stocks(id)
-) COMMENT '관심 주식';
-
--- 주식 거래 테이블
-CREATE TABLE stock_trades (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    stock_id BIGINT NOT NULL,
-    trade_type ENUM('BUY', 'SELL') NOT NULL,
-    quantity INT NOT NULL,
-    price INT NOT NULL,
-    trade_date DATETIME NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (stock_id) REFERENCES stocks(id)
-) COMMENT '주식 거래';
+) COMMENT '사용자 주식 관심 및 보유';
 
 -- 배치 작업 테이블
 CREATE TABLE batch_jobs (
@@ -115,14 +95,3 @@ CREATE TABLE batch_jobs (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) COMMENT '배치 작업';
-
--- 배치 작업 항목 테이블
-CREATE TABLE batch_job_items (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    batch_job_id BIGINT NOT NULL,
-    item_id BIGINT NOT NULL,
-    status ENUM('PENDING', 'PROCESSED', 'FAILED') NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (batch_job_id) REFERENCES batch_jobs(id)
-) COMMENT '배치 작업 항목';

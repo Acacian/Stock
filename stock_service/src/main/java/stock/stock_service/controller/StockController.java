@@ -75,7 +75,7 @@ public class StockController {
         Stock stock = stockService.getStockById(id);
         return ResponseEntity.ok(stockPriceService.getStockPrices(stock, startDate, endDate));
     }
-
+    
     @GetMapping("/{id}/prices/weekly")
     public ResponseEntity<List<StockPrice>> getWeeklyStockPrices(
             @PathVariable Long id,
