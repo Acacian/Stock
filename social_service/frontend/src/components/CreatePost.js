@@ -6,9 +6,13 @@ const CreatePost = ({ userId, onPostCreated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await createPost(userId, content);
-    setContent('');
-    onPostCreated();
+    try {
+      await createPost(userId, content);
+      setContent('');
+      onPostCreated();
+    } catch (error) {
+      console.error('Error creating post:', error);
+    }
   };
 
   return (

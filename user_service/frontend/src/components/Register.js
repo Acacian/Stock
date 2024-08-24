@@ -23,8 +23,12 @@ const Register = () => {
       alert('Registration successful. Please check your email for verification.');
       navigate('/login');
     } catch (error) {
-      console.error('Registration failed:', error);
-      setError('Registration failed. Please try again.');
+      if (error.response && error.response.data) {
+        // Handle specific error messages from the server
+        setError(error.response.data.message || 'Registration failed. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     }
   };
 

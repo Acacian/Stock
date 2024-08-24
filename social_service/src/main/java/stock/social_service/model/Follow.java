@@ -20,6 +20,7 @@ public class Follow {
     @Column(name = "followee_id")
     private Long followeeId;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @PrePersist

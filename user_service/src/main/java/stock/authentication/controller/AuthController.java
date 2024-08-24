@@ -22,7 +22,14 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
+    public ResponseEntity<?> registerUser(
+            @RequestParam String name,
+            @RequestParam String email,
+            @RequestParam String password) {
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(password);
         try {
             return ResponseEntity.ok(authService.registerUser(user));
         } catch (EmailAlreadyExistsException e) {

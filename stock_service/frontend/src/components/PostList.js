@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { List, ListItem, ListItemText, CircularProgress, Typography, Button } from '@material-ui/core';
+import { List, ListItem, ListItemText, CircularProgress, Typography, Button, Select, MenuItem } from '@material-ui/core';
 import ThumbUpIcon from '@material-ui/icons/ThumbUp';
+import { getAllStocks } from '../api/stockapi';
 
 const PostList = () => {
   const [posts, setPosts] = useState([]);
@@ -9,15 +10,33 @@ const PostList = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [stocks, setStocks] = useState([]);
+  const [selectedStock, setSelectedStock] = useState('');
 
   useEffect(() => {
+    fetchStocks();
     fetchPosts();
   }, []);
+
+  const fetchStocks = async () => {
+    try {
+      const data = await getAllStocks();
+      setStocks(data.content);
+    } catch (error) {
+      console.error('Error fetching stocks:', error);
+    }
+  };
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/social/posts?page=${page}&size=10`);
+      const response = await axios.get(`/api/social/posts`, {
+        params: {
+          page,
+          size: 10,
+          stockId: selectedStock
+        }
+      });
       setPosts(prevPosts => [...prevPosts, ...response.data.content]);
       setHasMore(!response.data.last);
       setPage(prevPage => prevPage + 1);
@@ -42,6 +61,13 @@ const PostList = () => {
     }
   };
 
+  const handleStockChange = (event) => {
+    setSelectedStock(event.target.value);
+    setPage(0);
+    setPosts([]);
+    fetchPosts();
+  };
+
   if (error) {
     return <Typography color="error">{error}</Typography>;
   }
@@ -49,6 +75,17 @@ const PostList = () => {
   return (
     <div className="post-list">
       <Typography variant="h4">최근 포스트</Typography>
+      <Select
+        value={selectedStock}
+        onChange={handleStockChange}
+        displayEmpty
+        fullWidth
+      >
+        <MenuItem value="">모든 종목</MenuItem>
+        {stocks.map((stock) => (
+          <MenuItem key={stock.id} value={stock.id}>{stock.name}</MenuItem>
+        ))}
+      </Select>
       <List>
         {posts.map(post => (
           <ListItem key={post.id}>
@@ -60,7 +97,7 @@ const PostList = () => {
                     {post.content}
                   </Typography>
                   <br />
-                  {`작성자: ${post.authorName} | ${new Date(post.createdAt).toLocaleString()}`}
+                  {`작성자: ${post.authorName} | ${new Date(post.createdAt).toLocaleString()} | 종목: ${post.stockName}`}
                 </>
               }
             />

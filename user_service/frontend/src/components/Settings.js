@@ -1,26 +1,33 @@
 import React, { useState } from 'react';
 import { updatePassword } from '../services/UserApi';
+import { useAuth } from '../context/AuthContext';
 
-const Settings = ({ user }) => {
+const Settings = () => {
+  const { user } = useAuth();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     try {
       await updatePassword(user.id, oldPassword, newPassword);
-      alert('Password updated successfully');
+      setSuccess('Password updated successfully');
       setOldPassword('');
       setNewPassword('');
     } catch (error) {
-      console.error('Failed to update password:', error);
-      alert('Failed to update password. Please check your old password and try again.');
+      setError('Failed to update password. Please check your old password and try again.');
     }
   };
 
   return (
     <div className="settings">
       <h2>Settings</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {success && <p style={{ color: 'green' }}>{success}</p>}
       <form onSubmit={handlePasswordChange}>
         <input
           type="password"

@@ -2,15 +2,21 @@ package stock.social_service.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import stock.social_service.service.SocialService;
 import stock.social_service.model.Post;
-import stock.social_service.kafka.SocialEvent;
 import stock.social_service.model.Comment;
+import stock.social_service.service.SocialService;
+import stock.social_service.kafka.SocialEvent;
+import stock.social_service.dto.CreatePostRequest;
+import stock.social_service.dto.CreateCommentRequest;
 
 import java.util.List;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
+
 
 @RestController
 @RequestMapping("/api/social")
@@ -20,42 +26,51 @@ public class SocialController {
     private SocialService socialService;
 
     @PostMapping("/posts")
-    public ResponseEntity<?> createPost(@RequestBody Post post) {
-        return ResponseEntity.ok(socialService.createPost(post.getUserId(), post.getContent(), post.getStockId()));
+    public ResponseEntity<Post> createPost(@RequestBody CreatePostRequest request) {
+        Post post = socialService.createPost(request.getUserId(), request.getContent(), request.getStockId());
+        return ResponseEntity.ok(post);
     }
 
     @PostMapping("/posts/{postId}/comments")
-    public ResponseEntity<?> addComment(@PathVariable Long postId, @RequestBody Comment comment) {
-        return ResponseEntity.ok(socialService.addComment(comment.getUserId(), postId, comment.getContent()));
+    public ResponseEntity<Comment> addComment(@PathVariable Long postId, @RequestBody CreateCommentRequest request) {
+        Comment comment = socialService.addComment(request.getUserId(), postId, request.getContent());
+        return ResponseEntity.ok(comment);
     }
 
-    @PostMapping("/posts/{postId}/likes")
-    public ResponseEntity<?> likePost(@PathVariable Long postId, @RequestParam Long userId) {
+    @PostMapping("/posts/{postId}/like")
+    public ResponseEntity<Void> likePost(@PathVariable Long postId, @RequestParam Long userId) {
         socialService.likePost(userId, postId);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/posts/{postId}/likes")
-    public ResponseEntity<?> unlikePost(@PathVariable Long postId, @RequestParam Long userId) {
+    @DeleteMapping("/posts/{postId}/like")
+    public ResponseEntity<Void> unlikePost(@PathVariable Long postId, @RequestParam Long userId) {
         socialService.unlikePost(userId, postId);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/follow")
-    public ResponseEntity<?> follow(@RequestParam Long followerId, @RequestParam Long followeeId) {
+    public ResponseEntity<Void> follow(@RequestParam Long followerId, @RequestParam Long followeeId) {
         socialService.follow(followerId, followeeId);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/unfollow")
-    public ResponseEntity<?> unfollow(@RequestParam Long followerId, @RequestParam Long followeeId) {
+    @DeleteMapping("/follow")
+    public ResponseEntity<Void> unfollow(@RequestParam Long followerId, @RequestParam Long followeeId) {
         socialService.unfollow(followerId, followeeId);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/posts/user/{userId}")
-    public ResponseEntity<List<Post>> getPostsByUserId(@PathVariable Long userId) {
-        return ResponseEntity.ok(socialService.getPostsByUserId(userId));
+    public ResponseEntity<Page<Post>> getPostsByUserId(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        Pageable pageable = PageRequest.of(page, size, 
+            Sort.by(Sort.Direction.fromString(sortDirection), sortBy));
+        return ResponseEntity.ok(socialService.getPostsByUserId(userId, pageable));
     }
 
     @GetMapping("/posts/{postId}")
@@ -68,41 +83,57 @@ public class SocialController {
         return ResponseEntity.ok(socialService.getCommentsByPostId(postId));
     }
 
-    @GetMapping("/posts/{userId}/with-activity")
-    public ResponseEntity<List<Post>> getPostsWithActivity(@PathVariable Long userId) {
-        return ResponseEntity.ok(socialService.getPostsWithActivity(userId));
+    @GetMapping("/posts/activity/{userId}")
+    public ResponseEntity<Page<Post>> getPostsWithActivity(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        Pageable pageable = PageRequest.of(page, size, 
+            Sort.by(Sort.Direction.fromString(sortDirection), sortBy));
+        return ResponseEntity.ok(socialService.getPostsWithActivity(userId, pageable));
     }
 
-    @PostMapping("/comments/{commentId}/likes")
-    public ResponseEntity<?> likeComment(@PathVariable Long commentId, @RequestParam Long userId) {
+    @PostMapping("/comments/{commentId}/like")
+    public ResponseEntity<Void> likeComment(@PathVariable Long commentId, @RequestParam Long userId) {
         socialService.likeComment(userId, commentId);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/comments/{commentId}/likes")
-    public ResponseEntity<?> unlikeComment(@PathVariable Long commentId, @RequestParam Long userId) {
+    @DeleteMapping("/comments/{commentId}/like")
+    public ResponseEntity<Void> unlikeComment(@PathVariable Long commentId, @RequestParam Long userId) {
         socialService.unlikeComment(userId, commentId);
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/users/{userId}/follower-activity")
+    @GetMapping("/follower-activity/{userId}")
     public ResponseEntity<List<SocialEvent>> getFollowerActivity(@PathVariable Long userId) {
-        List<SocialEvent> followerActivity = socialService.getFollowerActivity(userId);
-        return ResponseEntity.ok(followerActivity);
+        return ResponseEntity.ok(socialService.getFollowerActivity(userId));
     }
 
     @GetMapping("/posts/stock/{stockId}")
     public ResponseEntity<Page<Post>> getPostsByStock(
             @PathVariable Long stockId,
-            Pageable pageable) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        Pageable pageable = PageRequest.of(page, size, 
+            Sort.by(Sort.Direction.fromString(sortDirection), sortBy));
         return ResponseEntity.ok(socialService.getPostsByStock(stockId, pageable));
     }
 
     @GetMapping("/posts/search")
     public ResponseEntity<Page<Post>> searchPosts(
             @RequestParam String query,
-            @RequestParam List<Long> userIds,
-            Pageable pageable) {
-        return ResponseEntity.ok(socialService.searchPosts(query, userIds, pageable));
+            @RequestParam(required = false) Long stockId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        Pageable pageable = PageRequest.of(page, size, 
+            Sort.by(Sort.Direction.fromString(sortDirection), sortBy));
+        return ResponseEntity.ok(socialService.searchPosts(query, stockId, pageable));
     }
 }

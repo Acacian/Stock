@@ -9,7 +9,7 @@ WORKDIR /app/frontend
 COPY social_service/frontend/package*.json ./
 RUN npm install
 RUN npm install react-router-dom
-RUN npm install --save-dev @babel/plugin-proposal-private-property-in-object
+RUN npm install --save-dev @babel/plugin-proposal-private-property-in-object@7.21.0-placeholder-for-preset-env.2
 COPY social_service/frontend .
 RUN npm run build
 

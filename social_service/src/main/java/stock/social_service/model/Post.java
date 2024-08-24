@@ -24,14 +24,20 @@ public class Post {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @ManyToOne
+    @JoinColumn(name = "parent_id")
+    private Post parent;
+
+    @OneToMany(mappedBy = "parent")
+    private List<Post> replies = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
+
     @ElementCollection
-    @CollectionTable(name = "post_likes", joinColumns = @JoinColumn(name = "post_id"))
+    @CollectionTable(name = "likes", joinColumns = @JoinColumn(name = "post_id"))
     @Column(name = "user_id")
     private Set<Long> likes = new HashSet<>();
-
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "post_id")
-    private List<Comment> comments = new ArrayList<>();
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

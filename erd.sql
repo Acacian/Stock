@@ -21,30 +21,36 @@ CREATE TABLE posts (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (parent_id) REFERENCES posts(id)
+    FOREIGN KEY (parent_id) REFERENCES posts(id),
+    INDEX (user_id),
+    INDEX (parent_id)
 ) COMMENT '포스트 및 댓글';
 
--- 좋아요 테이블
+-- 좋아요 테이블 (ID 제거, 복합 키 사용 및 인덱스 추가)
 CREATE TABLE likes (
     user_id BIGINT NOT NULL,
     post_id BIGINT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, post_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (post_id) REFERENCES posts(id)
+    FOREIGN KEY (post_id) REFERENCES posts(id),
+    INDEX (user_id),
+    INDEX (post_id)
 ) COMMENT '좋아요';
 
--- 팔로우 테이블
+-- 팔로우 테이블 (인덱스 추가)
 CREATE TABLE follows (
     follower_id BIGINT NOT NULL,
     followee_id BIGINT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (follower_id, followee_id),
     FOREIGN KEY (follower_id) REFERENCES users(id),
-    FOREIGN KEY (followee_id) REFERENCES users(id)
+    FOREIGN KEY (followee_id) REFERENCES users(id),
+    INDEX (follower_id),
+    INDEX (followee_id)
 ) COMMENT '팔로우';
 
--- 주식 테이블
+-- 주식 테이블 (인덱스 추가)
 CREATE TABLE stocks (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     code VARCHAR(20) NOT NULL UNIQUE,
@@ -53,10 +59,12 @@ CREATE TABLE stocks (
     sector VARCHAR(255),
     market_cap BIGINT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX (code),
+    INDEX (market_type)
 ) COMMENT '주식';
 
--- 주식 가격 테이블
+-- 주식 가격 테이블 (ID 제거, 복합 키 사용 및 인덱스 추가)
 CREATE TABLE stock_prices (
     stock_id BIGINT NOT NULL,
     date DATE NOT NULL,
@@ -69,10 +77,12 @@ CREATE TABLE stock_prices (
     change_rate DECIMAL(5,2),
     trading_amount BIGINT,
     PRIMARY KEY (stock_id, date),
-    FOREIGN KEY (stock_id) REFERENCES stocks(id)
+    FOREIGN KEY (stock_id) REFERENCES stocks(id),
+    INDEX (stock_id),
+    INDEX (date)
 ) COMMENT '주식 가격';
 
--- 사용자 주식 관심 및 거래 테이블
+-- 사용자 주식 관심 및 거래 테이블 (인덱스 추가)
 CREATE TABLE user_stocks (
     user_id BIGINT NOT NULL,
     stock_id BIGINT NOT NULL,
@@ -82,7 +92,9 @@ CREATE TABLE user_stocks (
     last_trade_date DATETIME,
     PRIMARY KEY (user_id, stock_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (stock_id) REFERENCES stocks(id)
+    FOREIGN KEY (stock_id) REFERENCES stocks(id),
+    INDEX (user_id),
+    INDEX (stock_id)
 ) COMMENT '사용자 주식 관심 및 보유';
 
 -- 배치 작업 테이블
@@ -93,5 +105,7 @@ CREATE TABLE batch_jobs (
     start_time DATETIME,
     end_time DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX (job_name),
+    INDEX (status)
 ) COMMENT '배치 작업';

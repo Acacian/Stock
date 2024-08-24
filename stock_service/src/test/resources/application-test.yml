@@ -1,4 +1,6 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   config:
     import: optional:file:.env[.properties]
   application:
@@ -16,7 +18,7 @@ spring:
         jdbc:
           batch_size: 50
   kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:kafka:9092}
+    bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9092}
     consumer:
       group-id: ${spring.application.name}-group
       auto-offset-reset: earliest

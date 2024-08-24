@@ -10,6 +10,7 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import org.springframework.http.HttpMethod;
 
 import java.security.Key;
 
@@ -30,6 +31,15 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
 
+            if (request.getMethod() == HttpMethod.OPTIONS) {
+                return chain.filter(exchange);
+            }
+
+            // 공개 엔드포인트 우회
+            if (isOpenEndpoint(request.getPath().toString())) {
+                return chain.filter(exchange);
+            }
+
             if (!request.getHeaders().containsKey("Authorization")) {
                 return onError(exchange, "No Authorization header", HttpStatus.UNAUTHORIZED);
             }
@@ -46,6 +56,10 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
 
             return chain.filter(exchange);
         };
+    }
+
+    private boolean isOpenEndpoint(String path) {
+        return path.contains("/api/auth/register") || path.contains("/api/auth/login");
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {

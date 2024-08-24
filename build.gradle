@@ -50,15 +50,6 @@ subprojects {
         }
     }
 
-    // Eureka Server를 제외한 모든 서브프로젝트에 적용
-    if (project.name != 'eureka_server') {
-        dependencies {
-            implementation "io.github.resilience4j:resilience4j-spring-boot2:${resilience4jVersion}"
-            implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-            implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-        }
-    }
-
     // User Service에만 적용되는 의존성
     if (project.name == 'user_service') {
         dependencies {
@@ -68,6 +59,13 @@ subprojects {
             implementation 'com.github.f4b6a3:uuid-creator:5.1.0'
             testImplementation 'org.assertj:assertj-core:3.24.2'
             testImplementation 'org.springframework.security:spring-security-test'
+        }
+    }
+
+    // Social Service에만 적용되는 의존성
+    if (project.name == 'social_service') {
+        dependencies {
+            implementation 'org.springframework.boot:spring-boot-starter-websocket'
         }
     }
 
@@ -82,16 +80,22 @@ subprojects {
     if (project.name == 'api_gateway') {
         dependencies {
             implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
-            implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
+            implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
+            implementation "io.github.resilience4j:resilience4j-reactor:${resilience4jVersion}"
             implementation 'org.springframework.boot:spring-boot-starter-actuator'
+            implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
+            implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
         }
     }
 
     // Eureka Server와 API Gateway를 제외한 모든 서브프로젝트에 적용
     if (!(project.name in ['eureka_server', 'api_gateway'])) {
         dependencies {
+            implementation "io.github.resilience4j:resilience4j-spring-boot2:${resilience4jVersion}"
+            implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+            implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+            
             implementation 'org.apache.kafka:kafka-streams'
-
             implementation 'org.springframework.boot:spring-boot-starter-web'
             implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
             implementation 'org.springframework.kafka:spring-kafka'

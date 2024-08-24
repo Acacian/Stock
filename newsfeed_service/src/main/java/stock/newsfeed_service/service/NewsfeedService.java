@@ -10,6 +10,8 @@ import stock.newsfeed_service.kafka.StockEvent;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class NewsfeedService {
@@ -80,11 +82,27 @@ public class NewsfeedService {
         addActivityToNewsfeed(postOwnerId, item);
     }
 
+    public List<NewsfeedItem> getNewsfeed(Long userId) {
+        String key = "newsfeed:" + userId;
+        List<String> serializedItems = redisTemplate.opsForList().range(key, 0, 99);
+        return serializedItems.stream()
+                .map(this::deserializeNewsfeedItem)
+                .collect(Collectors.toList());
+    }
+
     private String serializeNewsfeedItem(NewsfeedItem item) {
         try {
             return objectMapper.writeValueAsString(item);
         } catch (Exception e) {
             throw new RuntimeException("Error serializing NewsfeedItem", e);
+        }
+    }
+
+    private NewsfeedItem deserializeNewsfeedItem(String serializedItem) {
+        try {
+            return objectMapper.readValue(serializedItem, NewsfeedItem.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Error deserializing NewsfeedItem", e);
         }
     }
 }

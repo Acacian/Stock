@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import { Typography, Paper, CircularProgress } from '@material-ui/core';
 import StockChart from './StockChart';
 import StockDiscussion from './StockDiscussion';
+import { getStockById } from '../services/stockapi';
 
 const StockDetail = () => {
   const { id } = useParams();
@@ -12,21 +12,21 @@ const StockDetail = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const fetchStockDetails = async () => {
+      try {
+        setLoading(true);
+        const data = await getStockById(id);
+        setStock(data);
+      } catch (error) {
+        console.error('Error fetching stock details:', error);
+        setError('주식 정보를 불러오는데 실패했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchStockDetails();
   }, [id]);
-
-  const fetchStockDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`/api/stocks/${id}`);
-      setStock(response.data);
-    } catch (error) {
-      console.error('Error fetching stock details:', error);
-      setError('주식 정보를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) return <CircularProgress />;
   if (error) return <Typography color="error">{error}</Typography>;

@@ -1,20 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getFollowers, getFollowing } from '../../services/SocialApi';
-import { FollowButton } from './FollowButton';
+import { getFollowers, getFollowing } from '../services/SocialApi';
+import FollowButton from './FollowButton';
 
 const FollowList = ({ userId, type, currentUserId }) => {
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const data = type === 'followers' 
-        ? await getFollowers(userId)
-        : await getFollowing(userId);
-      setUsers(data);
+      try {
+        setLoading(true);
+        const data = type === 'followers' 
+          ? await getFollowers(userId)
+          : await getFollowing(userId);
+        setUsers(data);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        setError('Failed to load users');
+      } finally {
+        setLoading(false);
+      }
     };
     fetchUsers();
   }, [userId, type]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="follow-list">
@@ -26,7 +39,8 @@ const FollowList = ({ userId, type, currentUserId }) => {
             {currentUserId !== user.id && (
               <FollowButton 
                 currentUserId={currentUserId} 
-                targetUserId={user.id} 
+                targetUserId={user.id}
+                initialIsFollowing={user.isFollowing}
               />
             )}
           </li>

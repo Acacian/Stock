@@ -10,6 +10,6 @@ public class AuthEventProducer {
     private KafkaTemplate<String, AuthEvent> authEventKafkaTemplate;
 
     public void sendAuthEvent(AuthEvent event) {
-        authEventKafkaTemplate.send("auth-events", event);
+        authEventKafkaTemplate.send("user-events", event);
     }
 }

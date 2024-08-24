@@ -8,6 +8,8 @@ import stock.stock_service.service.StockPriceService;
 import stock.stock_service.service.StockService;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Component
 public class StockPriceScheduler {
@@ -18,27 +20,28 @@ public class StockPriceScheduler {
     @Autowired
     private StockPriceService stockPriceService;
 
-    @Scheduled(cron = "0 0 18 * * MON-FRI")
+    @Scheduled(cron = "${stock.scheduler.daily.cron:0 0 18 * * MON-FRI}")
     public void updateDailyStockPrices() {
-        List<Stock> stocksToUpdate = stockService.getStocksToUpdate();
-        for (Stock stock : stocksToUpdate) {
-            stockPriceService.fetchAndSaveStockPrices(stock, 1);
-        }
+        updateStockPrices(1);
     }
 
-    @Scheduled(cron = "0 0 1 * * SUN")
+    @Scheduled(cron = "${stock.scheduler.weekly.cron:0 0 1 * * SUN}")
     public void updateWeeklyStockPrices() {
-        List<Stock> stocksToUpdate = stockService.getStocksToUpdate();
-        for (Stock stock : stocksToUpdate) {
-            stockPriceService.fetchAndSaveStockPrices(stock, 7);
-        }
+        updateStockPrices(7);
     }
 
-    @Scheduled(cron = "0 0 2 1 * ?")
+    @Scheduled(cron = "${stock.scheduler.monthly.cron:0 0 2 1 * ?}")
     public void updateMonthlyStockPrices() {
+        updateStockPrices(30);
+    }
+
+    private void updateStockPrices(int days) {
         List<Stock> stocksToUpdate = stockService.getStocksToUpdate();
-        for (Stock stock : stocksToUpdate) {
-            stockPriceService.fetchAndSaveStockPrices(stock, 30);
-        }
+        List<CompletableFuture<Void>> futures = stocksToUpdate.stream()
+            .map(stock -> CompletableFuture.runAsync(() -> 
+                stockPriceService.fetchAndSaveStockPrices(stock, days)))
+            .collect(Collectors.toList());
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 }

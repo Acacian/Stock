@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { List, ListItem, ListItemText, CircularProgress, Typography } from '@material-ui/core';
+import { List, ListItem, ListItemText, CircularProgress, Typography, Button } from '@material-ui/core';
 
 const CommentList = ({ postId }) => {
   const [comments, setComments] = useState([]);
@@ -8,10 +8,6 @@ const CommentList = ({ postId }) => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-
-  useEffect(() => {
-    fetchComments();
-  }, [postId]);
 
   const fetchComments = async () => {
     try {
@@ -27,6 +23,10 @@ const CommentList = ({ postId }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchComments();
+  }, [postId]);
 
   if (error) {
     return <Typography color="error">{error}</Typography>;
@@ -47,7 +47,7 @@ const CommentList = ({ postId }) => {
       </List>
       {loading && <CircularProgress />}
       {!loading && hasMore && (
-        <button onClick={fetchComments}>더 보기</button>
+        <Button onClick={fetchComments}>더 보기</Button>
       )}
     </div>
   );

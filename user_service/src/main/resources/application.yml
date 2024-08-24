@@ -1,4 +1,6 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   config:
     import: optional:file:.env[.properties]
   application:
@@ -29,20 +31,19 @@ spring:
           starttls:
             enable: true
   kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:kafka:9092}
+    bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9092}
     consumer:
       group-id: ${spring.application.name}-group
       auto-offset-reset: earliest
-      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: stock.user_service.kafka
     producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     listener:
       ack-mode: MANUAL_IMMEDIATE
-    streams:
-      application-id: ${spring.application.name}-streams
-      properties:
-        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-        default.value.serde: org.springframework.kafka.support.serializer.JsonSerde
   cloud:
     openfeign:
       client:

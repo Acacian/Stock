@@ -1,24 +1,32 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { loginUser, logoutUser } from '../services/UserApi';
+import { loginUser, logoutUser, getUserProfile } from '../services/UserApi';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    const token = localStorage.getItem('token');
+    if (token) {
+      getUserProfile().then(userData => {
+        setUser(userData);
+        setLoading(false);
+      }).catch(() => {
+        localStorage.removeItem('token');
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
     }
   }, []);
 
   const login = async (email, password) => {
     try {
-      const userData = await loginUser(email, password);
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-      window.parent.postMessage({ type: 'USER_LOGGED_IN', user: userData }, '*');
+      const { token, user } = await loginUser(email, password);
+      localStorage.setItem('token', token);
+      setUser(user);
       return true;
     } catch (error) {
       console.error('Login failed:', error);
@@ -28,17 +36,16 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await logoutUser(user.token);
+      await logoutUser();
+      localStorage.removeItem('token');
       setUser(null);
-      localStorage.removeItem('user');
-      window.parent.postMessage({ type: 'USER_LOGGED_OUT' }, '*');
     } catch (error) {
       console.error('Logout failed:', error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

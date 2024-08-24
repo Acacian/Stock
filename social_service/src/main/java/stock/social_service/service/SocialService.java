@@ -48,6 +48,7 @@ public class SocialService {
         Comment comment = new Comment();
         comment.setUserId(userId);
         comment.setContent(content);
+        comment.setPost(post);
         Comment savedComment = commentRepository.save(comment);
 
         post.getComments().add(savedComment);
@@ -96,8 +97,8 @@ public class SocialService {
         newsfeedServiceClient.userUnfollowed(new SocialEvent("USER_UNFOLLOWED", followerId, followeeId, null));
     }
 
-    public List<Post> getPostsByUserId(Long userId) {
-        return postRepository.findByUserId(userId);
+    public Page<Post> getPostsByUserId(Long userId, Pageable pageable) {
+        return postRepository.findByUserId(userId, pageable);
     }
 
     public Post getPostById(Long postId) {
@@ -110,12 +111,12 @@ public class SocialService {
         return post.getComments();
     }
 
-    public List<Post> getPostsWithActivity(Long userId) {
-        List<Post> posts = postRepository.findByUserId(userId);
-        for (Post post : posts) {
+    public Page<Post> getPostsWithActivity(Long userId, Pageable pageable) {
+        Page<Post> posts = postRepository.findByUserId(userId, pageable);
+        posts.getContent().forEach(post -> {
             post.setCommentCount(post.getComments().size());
             post.setLikeCount(post.getLikes().size());
-        }
+        });
         return posts;
     }
 
@@ -125,7 +126,7 @@ public class SocialService {
 
         if (comment.getLikes().add(userId)) {
             commentRepository.save(comment);
-            newsfeedServiceClient.commentLiked(new SocialEvent("COMMENT_LIKED", userId, comment.getId(), commentId));
+            newsfeedServiceClient.commentLiked(new SocialEvent("COMMENT_LIKED", userId, comment.getPost().getId(), commentId));
         }
     }
 
@@ -135,7 +136,7 @@ public class SocialService {
 
         if (comment.getLikes().remove(userId)) {
             commentRepository.save(comment);
-            newsfeedServiceClient.commentUnliked(new SocialEvent("COMMENT_UNLIKED", userId, comment.getId(), commentId));
+            newsfeedServiceClient.commentUnliked(new SocialEvent("COMMENT_UNLIKED", userId, comment.getPost().getId(), commentId));
         }
     }
 
@@ -151,7 +152,7 @@ public class SocialService {
             
             List<Comment> followerComments = commentRepository.findRecentCommentsByUserId(followerId);
             for (Comment comment : followerComments) {
-                followerActivities.add(new SocialEvent("FOLLOWER_COMMENT", followerId, comment.getId(), comment.getId()));
+                followerActivities.add(new SocialEvent("FOLLOWER_COMMENT", followerId, comment.getPost().getId(), comment.getId()));
             }
         }
 
@@ -161,7 +162,7 @@ public class SocialService {
     }
 
     private void createFollowerActivity(Long followerId, Long followeeId) {
-        Post latestPost = postRepository.findTopByUserIdOrderByCreatedAtDesc(followeeId);
+        Post latestPost = postRepository.findTopByUserIdAndParentIsNullOrderByCreatedAtDesc(followeeId);
         if (latestPost != null) {
             newsfeedServiceClient.followerActivity(new SocialEvent("FOLLOWER_ACTIVITY", followerId, latestPost.getId(), null));
         }
@@ -171,7 +172,11 @@ public class SocialService {
         return postRepository.findByStockId(stockId, pageable);
     }
 
-    public Page<Post> searchPosts(String query, List<Long> userIds, Pageable pageable) {
-        return postRepository.findByContentContainingOrUserIdIn(query, userIds, pageable);
+    public Page<Post> searchPosts(String query, Long stockId, Pageable pageable) {
+        if (stockId != null) {
+            return postRepository.findByContentContainingAndStockId(query, stockId, pageable);
+        } else {
+            return postRepository.findByContentContaining(query, pageable);
+        }
     }
 }
