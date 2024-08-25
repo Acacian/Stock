@@ -10,9 +10,12 @@ import stock.user_service.dto.LoginRequest;
 import stock.user_service.dto.JwtAuthenticationResponse;
 import stock.user_service.dto.UpdatePasswordRequest;
 import stock.user_service.exception.GlobalExceptionHandler.EmailAlreadyExistsException;
+import stock.user_service.exception.GlobalExceptionHandler.InvalidTokenException;
+
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import stock.user_service.dto.UpdateProfileRequest;
+import stock.user_service.dto.RefreshTokenRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -40,8 +43,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         try {
-            String jwt = authService.authenticateUser(loginRequest.getEmail(), loginRequest.getPassword());
-            return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
+            JwtAuthenticationResponse jwt = authService.authenticateUser(loginRequest.getEmail(), loginRequest.getPassword());
+            return ResponseEntity.ok(jwt);
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
         } catch (BadCredentialsException e) {
@@ -86,5 +89,15 @@ public class AuthController {
     @PutMapping("/users/{id}")
     public ResponseEntity<User> updateProfile(@PathVariable Long id, @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(authService.updateProfile(id, request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest refreshTokenRequest) {
+        try {
+            JwtAuthenticationResponse newTokens = authService.refreshToken(refreshTokenRequest.getRefreshToken());
+            return ResponseEntity.ok(newTokens);
+        } catch (InvalidTokenException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
+        }
     }
 }

@@ -7,6 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -14,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import stock.user_service.exception.GlobalExceptionHandler.EmailAlreadyExistsException;
@@ -23,6 +27,7 @@ import stock.user_service.repository.UserRepository;
 import stock.user_service.security.JwtTokenProvider;
 import stock.user_service.kafka.AuthEvent;
 import stock.user_service.security.UserPrincipal;
+import stock.user_service.dto.JwtAuthenticationResponse;
 import stock.user_service.dto.UpdateProfileRequest;
 import stock.user_service.client.NewsfeedServiceClient;
 import java.time.LocalDateTime;
@@ -53,8 +58,14 @@ public class AuthService {
     @Autowired
     private NewsfeedServiceClient newsfeedServiceClient;
 
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
+
     @Value("${spring.profiles.active:}")
     private String activeProfile;
+
+    @Value("${app.jwt.refreshTokenExpirationInMs}")
+    private int refreshTokenExpirationInMs;
 
     public User getUser(Long id) {
         return userRepository.findById(id)
@@ -90,9 +101,7 @@ public class AuthService {
         user.setEnabled(false);
         User savedUser = userRepository.save(user);
 
-        if ("test".equals(activeProfile)) {
-            // 테스트 환경에서는 이메일 검증 패스
-        } else {
+        if (!"test".equals(activeProfile)) {
             String token = generateVerificationToken();
             redisTemplate.opsForValue().set("verification:" + token, savedUser.getEmail(), 24, TimeUnit.HOURS);
             emailService.sendVerificationEmail(savedUser.getEmail(), token);
@@ -119,19 +128,23 @@ public class AuthService {
         redisTemplate.delete("verification:" + token);
     }
 
-    public String authenticateUser(String email, String password) {
+    public JwtAuthenticationResponse authenticateUser(String email, String password) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
             );
-
-            String token = tokenProvider.generateToken(authentication);
+    
+            String accessToken = tokenProvider.generateAccessToken(authentication);
+            String refreshToken = tokenProvider.generateRefreshToken(authentication);
+    
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             User user = userRepository.findByEmail(userPrincipal.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            
+            saveRefreshToken(user.getEmail(), refreshToken);
             newsfeedServiceClient.userAuthenticated(new AuthEvent("USER_AUTHENTICATED", user.getId()));
             logger.info("사용자 인증 성공: {}", email);
-            return token;
+            return new JwtAuthenticationResponse(accessToken, refreshToken);
         } catch (BadCredentialsException e) {
             logger.error("Authentication failed for user: {}", email, e);
             throw e;
@@ -175,5 +188,60 @@ public class AuthService {
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public JwtAuthenticationResponse refreshToken(String refreshToken) {
+        if (tokenProvider.validateToken(refreshToken)) {
+            String username = tokenProvider.getUsernameFromJWT(refreshToken);
+            String storedRefreshToken = getRefreshToken(username);
+            if (refreshToken.equals(storedRefreshToken)) {
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+                Authentication authentication = 
+                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                String newAccessToken = tokenProvider.generateAccessToken(authentication);
+                String newRefreshToken = tokenProvider.generateRefreshToken(authentication);
+                
+                saveRefreshToken(username, newRefreshToken);
+                
+                return new JwtAuthenticationResponse(newAccessToken, newRefreshToken);
+            }
+        }
+        throw new InvalidTokenException("Invalid refresh token");
+    }
+
+    public void saveRefreshToken(String username, String refreshToken) {
+        redisTemplate.opsForValue().set(
+            "refresh_token:" + username,
+            refreshToken,
+            refreshTokenExpirationInMs,
+            TimeUnit.MILLISECONDS
+        );
+    }
+
+    public String getRefreshToken(String username) {
+        return redisTemplate.opsForValue().get("refresh_token:" + username);
+    }
+
+    @Cacheable(value = "userProfile", key = "#id")
+    public User getUserProfile(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    @CachePut(value = "userProfile", key = "#id")
+    public User updateUserProfile(Long id, UpdateProfileRequest request) {
+        User user = getUserProfile(id);
+        user.setName(request.getName());
+        user.setProfileImage(request.getProfileImage());
+        user.setIntroduction(request.getIntroduction());
+        User updatedUser = userRepository.save(user);
+        
+        newsfeedServiceClient.profileUpdated(new AuthEvent("PROFILE_UPDATED", id, user.getEmail()));
+        return updatedUser;
+    }
+
+    @CacheEvict(value = "userProfile", key = "#id")
+    public void deleteUserProfile(Long id) {
+        userRepository.deleteById(id);
     }
 }

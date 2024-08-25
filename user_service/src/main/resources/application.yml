@@ -6,7 +6,7 @@ spring:
   application:
     name: USER-SERVICE
   datasource:
-    url: jdbc:mysql://${SERVERS:db}:3306/Stock
+    url: jdbc:mysql://${SERVERS:db}:3306/Stock?useSSL=true&serverTimezone=UTC
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${DB_PASSWORD}
   jpa:
@@ -51,9 +51,18 @@ spring:
           default:
             connectTimeout: 5000
             readTimeout: 5000
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000 # 1 hour
 
 server:
-  port: 8082
+  port: 8443
+  ssl:
+    key-store: classpath:keystore.p12
+    key-store-password: ${SSL_KEY_STORE_PASSWORD}
+    key-store-type: PKCS12
+    key-alias: tomcat
 
 logging:
   level:
@@ -65,16 +74,22 @@ app:
   domain: ${APP_DOMAIN}
   jwt:
     secret: ${JWT_SECRET:defaultSecretKey}
-    expirationInMs: 3600000
+    accessTokenExpirationInMs: 900000  # 15분
+    refreshTokenExpirationInMs: 604800000  # 7일
+  upload:
+    dir: ${APP_UPLOAD_DIR:/tmp/uploads}
+    url: ${APP_UPLOAD_URL:http://localhost:8081/uploads}
 
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://eureka-server:8761/eureka/
+      defaultZone: https://eureka-server:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
   instance:
     preferIpAddress: true
+    securePortEnabled: true
+    nonSecurePortEnabled: false
 
 feign:
   client:

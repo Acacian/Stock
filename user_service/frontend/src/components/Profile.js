@@ -8,6 +8,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
 
   const fetchProfile = useCallback(async () => {
     if (!user || !user.id) return;
@@ -34,13 +35,27 @@ const Profile = () => {
     setProfile(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleImageChange = (e) => {
+    setImageFile(e.target.files[0]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setUpdateSuccess(false);
+  
     try {
-      const updatedProfile = await updateUserProfile(user.id, profile);
-      setProfile(updatedProfile);
+      const formData = new FormData();
+      formData.append('name', profile.name);
+      formData.append('introduction', profile.introduction);
+      if (imageFile) {
+        formData.append('file', imageFile);
+      }
+  
+      const response = await updateUserProfile(user.id, formData);
+      if (response.fileUrl) {
+        setProfile(prev => ({ ...prev, profileImage: response.fileUrl }));
+      }
       setUpdateSuccess(true);
     } catch (error) {
       setError('Failed to update profile. Please try again.');
@@ -96,6 +111,16 @@ const Profile = () => {
             value={profile.introduction || ''}
             onChange={handleChange}
             placeholder="Tell us about yourself"
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="profileImage">Profile Image:</label>
+          <input
+            type="file"
+            id="profileImage"
+            name="profileImage"
+            onChange={handleImageChange}
+            accept="image/*"
           />
         </div>
         {profile.profileImage && (

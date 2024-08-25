@@ -61,11 +61,8 @@ export const getUserProfile = (userId) => {
 export const updateUserProfile = (userId, profileData) => {
   return fetch(`${API_URL}/users/${userId}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeader(),
-    },
-    body: JSON.stringify(profileData),
+    headers: getAuthHeader(),
+    body: profileData,
   }).then(handleResponse);
 };
 

@@ -1,30 +1,32 @@
+# Backend Build Stage
 FROM gradle:7.6-jdk17 AS backend-build
 WORKDIR /app
 COPY . .
 RUN chmod +x ./gradlew
-RUN ./gradlew :social_service:build -x test --no-daemon
+RUN --mount=type=cache,target=/home/gradle/.gradle,sharing=private \
+    ./gradlew :social_service:build -x test --no-daemon \
+    --gradle-user-home /home/gradle/.gradle \
+    -Dorg.gradle.internal.http.socketTimeout=120000 \
+    -Dorg.gradle.internal.http.connectionTimeout=120000
 
 FROM node:14 AS frontend-build
 WORKDIR /app/frontend
 COPY social_service/frontend/package*.json ./
 RUN npm install
-RUN npm install react-router-dom
-RUN npm install --save-dev @babel/plugin-proposal-private-property-in-object@7.21.0-placeholder-for-preset-env.2
+RUN npm install --save-dev @babel/plugin-proposal-private-property-in-object
+RUN npm install @stomp/stompjs
 COPY social_service/frontend .
 RUN npm run build
 
+# Final Stage
 FROM openjdk:17-jdk-slim
 WORKDIR /app
-
 RUN apt-get update && apt-get install -y default-mysql-client wget unzip nginx
-
 COPY --from=backend-build /app/social_service/build/libs/*.jar app.jar
 COPY --from=frontend-build /app/frontend/build /usr/share/nginx/html
-
 COPY social_service/src/main/resources/application.yml /app/
 COPY social_service/src/test/resources/application-test.yml /app/
 COPY .env /app/.env
-
 COPY social_service/nginx.conf /etc/nginx/nginx.conf
 
 ENV MODE=${MODE:-prod}

@@ -26,6 +26,8 @@ import stock.user_service.exception.GlobalExceptionHandler.InvalidTokenException
 import stock.user_service.model.User;
 import stock.user_service.repository.UserRepository;
 import stock.user_service.security.JwtTokenProvider;
+import stock.user_service.service.AuthService;
+import stock.user_service.service.EmailService;
 import stock.user_service.dto.UpdateProfileRequest;
 
 @ExtendWith(SpringExtension.class)

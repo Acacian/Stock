@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Typography, Paper, CircularProgress } from '@material-ui/core';
 import StockChart from './StockChart';
 import StockDiscussion from './StockDiscussion';
-import { getStockById } from '../services/stockapi';
+import { getStockById } from '../services/StockApi';
 
 const StockDetail = () => {
   const { id } = useParams();

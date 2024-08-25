@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+
 import java.security.Key;
 import java.util.Date;
 
@@ -17,8 +18,11 @@ import java.util.Date;
 public class JwtTokenProvider {
     private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    @Value("${app.jwt.expirationInMs}")
-    private int jwtExpirationInMs;
+    @Value("${app.jwt.accessTokenExpirationInMs}")
+    private int accessTokenExpirationInMs;
+
+    @Value("${app.jwt.refreshTokenExpirationInMs}")
+    private int refreshTokenExpirationInMs;
 
     private Key key;
 
@@ -27,10 +31,18 @@ public class JwtTokenProvider {
         this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
     }
 
-    public String generateToken(Authentication authentication) {
+    public String generateAccessToken(Authentication authentication) {
+        return generateToken(authentication, accessTokenExpirationInMs);
+    }
+
+    public String generateRefreshToken(Authentication authentication) {
+        return generateToken(authentication, refreshTokenExpirationInMs);
+    }
+
+    public String generateToken(Authentication authentication, int expirationInMs) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
+        Date expiryDate = new Date(now.getTime() + expirationInMs);
 
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())

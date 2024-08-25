@@ -1,9 +1,13 @@
 package stock.social_service.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.InternalServerErrorException;
 import stock.social_service.model.Post;
 import stock.social_service.model.Comment;
 import stock.social_service.model.Follow;
@@ -13,6 +17,8 @@ import stock.social_service.repository.FollowRepository;
 import stock.social_service.kafka.SocialEvent;
 import stock.social_service.client.NewsfeedServiceClient;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.*;
 
 @Service
@@ -30,15 +36,24 @@ public class SocialService {
     @Autowired
     private NewsfeedServiceClient newsfeedServiceClient;
 
+    private static final Logger logger = LoggerFactory.getLogger(SocialService.class);
+
     public Post createPost(Long userId, String content, Long stockId) {
-        Post post = new Post();
-        post.setUserId(userId);
-        post.setContent(content);
-        post.setStockId(stockId);
-        Post savedPost = postRepository.save(post);
-        
-        newsfeedServiceClient.postCreated(new SocialEvent("POST_CREATED", userId, savedPost.getId(), null));
-        return savedPost;
+        try {
+            Post post = new Post();
+            post.setUserId(userId);
+            post.setContent(content);
+            post.setStockId(stockId);
+            Post savedPost = postRepository.save(post);
+            
+            newsfeedServiceClient.postCreated(new SocialEvent("POST_CREATED", userId, savedPost.getId(), null));
+            return savedPost;
+        } catch (DataIntegrityViolationException e) {
+            throw new BadRequestException("Invalid post data: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error creating post: ", e);
+            throw new InternalServerErrorException("An error occurred while creating the post");
+        }
     }
 
     public Comment addComment(Long userId, Long postId, String content) {

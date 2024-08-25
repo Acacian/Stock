@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { List, ListItem, ListItemText, CircularProgress, Typography, Button, Select, MenuItem } from '@material-ui/core';
 import ThumbUpIcon from '@material-ui/icons/ThumbUp';
-import { getAllStocks } from '../api/stockapi';
+import { getAllStocks } from '../services/StockApi';
 
 const PostList = () => {
   const [posts, setPosts] = useState([]);

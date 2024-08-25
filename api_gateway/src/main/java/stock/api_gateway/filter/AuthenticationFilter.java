@@ -1,5 +1,6 @@
 package stock.api_gateway.filter;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import org.springframework.http.HttpMethod;
 
+import java.util.Date;
 import java.security.Key;
 
 @Component
@@ -72,7 +74,18 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             if (key == null) {
                 key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
             }
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+            
+            // 토큰 만료 검사
+            Date now = new Date();
+            if (claims.getExpiration().before(now)) {
+                return false;
+            }
+            
             return true;
         } catch (Exception e) {
             return false;

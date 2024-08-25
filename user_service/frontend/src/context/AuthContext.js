@@ -1,3 +1,4 @@
+// AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { loginUser, logoutUser, getUserProfile } from '../services/UserApi';
 

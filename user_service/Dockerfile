@@ -1,24 +1,18 @@
-# Backend build stage
+# Backend Build Stage
 FROM gradle:7.6-jdk17 AS backend-build
 WORKDIR /app
 COPY . .
 RUN chmod +x ./gradlew
-# Add Gradle build cache
-RUN --mount=type=cache,target=/root/.gradle \
+RUN --mount=type=cache,target=/home/gradle/.gradle,sharing=private \
     ./gradlew :user_service:build -x test --no-daemon \
-    --gradle-user-home /root/.gradle \
+    --gradle-user-home /home/gradle/.gradle \
     -Dorg.gradle.internal.http.socketTimeout=120000 \
-    -Dorg.gradle.internal.http.connectionTimeout=120000 \
-    || (sleep 10 && ./gradlew :user_service:build -x test --no-daemon \
-    --gradle-user-home /root/.gradle \
-    -Dorg.gradle.internal.http.socketTimeout=120000 \
-    -Dorg.gradle.internal.http.connectionTimeout=120000)
+    -Dorg.gradle.internal.http.connectionTimeout=120000
 
-# Frontend build stage
-FROM node:18 AS frontend-build
+# Frontend Build Stage
+FROM node:14 AS frontend-build
 WORKDIR /app/frontend
 COPY user_service/frontend/package*.json ./
-RUN npm cache clean --force
 RUN npm install
 COPY user_service/frontend .
 RUN npm run build
@@ -26,16 +20,12 @@ RUN npm run build
 # Final stage
 FROM openjdk:17-jdk-slim
 WORKDIR /app
-
 RUN apt-get update && apt-get install -y default-mysql-client wget unzip nginx
-
 COPY --from=backend-build /app/user_service/build/libs/*.jar app.jar
 COPY --from=frontend-build /app/frontend/build /usr/share/nginx/html
-
 COPY user_service/src/main/resources/application.yml /app/
 COPY user_service/src/test/resources/application-test.yml /app/
 COPY .env /app/.env
-
 COPY user_service/nginx.conf /etc/nginx/nginx.conf
 
 ENV MODE=${MODE:-prod}
