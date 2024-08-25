@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/home/gradle/.gradle,sharing=private \
     -Dorg.gradle.internal.http.socketTimeout=120000 \
     -Dorg.gradle.internal.http.connectionTimeout=120000
 
-FROM node:14 AS frontend-build
+FROM node:16 AS frontend-build
 WORKDIR /app/frontend
 COPY social_service/frontend/package*.json ./
 RUN npm install

@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { ErrorBoundary } from 'react-error-boundary';
 import StockList from './components/StockList';
 import StockDetail from './components/StockDetail';
 import StockDiscussion from './components/StockDiscussion';
 import './App.css';
+
+function ErrorFallback({error, resetErrorBoundary}) {
+  return (
+    <div role="alert" className="error-fallback">
+      <h2>오류가 발생했습니다</h2>
+      <p>죄송합니다. 문제가 발생했습니다:</p>
+      <pre>{error.message}</pre>
+      <button onClick={resetErrorBoundary}>다시 시도</button>
+    </div>
+  );
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -24,11 +36,25 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <Routes>
-          <Route path="/" element={<StockList />} />
-          <Route path="/stock/:stockId" element={<StockDetail />} />
-          <Route path="/stock/:stockId/discussion" element={<StockDiscussion user={user} />} />
-        </Routes>
+        <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => window.location.reload()}>
+          <Routes>
+            <Route path="/" element={
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <StockList />
+              </ErrorBoundary>
+            } />
+            <Route path="/stock/:stockId" element={
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <StockDetail />
+              </ErrorBoundary>
+            } />
+            <Route path="/stock/:stockId/discussion" element={
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <StockDiscussion user={user} />
+              </ErrorBoundary>
+            } />
+          </Routes>
+        </ErrorBoundary>
       </div>
     </Router>
   );

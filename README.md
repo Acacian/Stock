@@ -1,17 +1,18 @@
 # 📝 주식 토론 게시판 백엔드 프로젝트
 
-이 프로젝트는 한 달간 진행된 개인 백엔드 프로젝트로, 주식 토론 게시판을 구현한 것입니다. Spring Boot와 Kafka, Redis, Eureka 등의 최신 백엔드 기술을 활용하여 개발되었습니다.
+- 이 프로젝트는 한 달간 진행된 개인 백엔드 프로젝트로, 주식 토론 게시판을 구현한 것입니다. 간단하지만 프론트엔드 역시 혼자서 구현했습니다.
+- Java 및 Spring Boot를 메인으로 사용하였고 Kafka,Redis,Eureka,WebSocket,WebRTC 등의 최신 백엔드 기술을 활용하여 개발되었습니다.
 
 ## 💻 사용된 프레임워크 및 아키텍처
 
-![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-F2F4F9?style=for-the-badge&logo=spring-boot) ![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white) ![MSA](https://img.shields.io/badge/MSA-00897B?style=for-the-badge) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Zookeeper](https://img.shields.io/badge/Zookeeper-FF4B4B?style=for-the-badge&logo=apache-zookeeper&logoColor=white) ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white) ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white) ![Eureka](https://img.shields.io/badge/Eureka-4DB33D?style=for-the-badge&logo=spring&logoColor=white)
+![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-F2F4F9?style=for-the-badge&logo=spring-boot) ![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white) ![MSA](https://img.shields.io/badge/MSA-00897B?style=for-the-badge) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Zookeeper](https://img.shields.io/badge/Zookeeper-FF4B4B?style=for-the-badge&logo=apache-zookeeper&logoColor=white) ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white) ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white) ![Eureka](https://img.shields.io/badge/Eureka-4DB33D?style=for-the-badge&logo=spring&logoColor=white) ![WebRTC](https://img.shields.io/badge/WebRTC-333333?style=for-the-badge&logo=webrtc&logoColor=white) ![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=websocket&logoColor=white)
 
 ## 🚪 포트 구성
 
 다음은 각 서비스에서 사용되는 포트 정보입니다:
 
 - **Eureka**: `8761`
-- **MySQL**: `3306`
+- **MySQL**: `3307`
 - **Redis**: `6379`
 - **Kafka**: `9092`
 - **Zookeeper**: `2181`
@@ -23,7 +24,7 @@
 - **Stock Service**: `8085`
 - **Frontend**: `3001`,`3002`,`3003`,`3004`
 
-> **참고:** 비용 절감을 위해 기존의 `auth-service`는 `user-service`와 통합되었습니다.
+> **참고:** 비용 절감을 위해 기존의 `auth-service`는 `user-service`와 통합되었습니다. 또한 시간적 문제로 WebRTC, WebSocket을 위한 서비스를 따로 분리하지 못하고 Social Service와 통합시켰습니다.
 
 ## 🛠 문제 해결 (Troubleshooting)
 
@@ -47,6 +48,7 @@
 
 ## 🐳 Docker 명령어
 
+- 우선, Docker를 설치해주세요.
 - **빌드**: `docker-compose -f docker-compose.yml build --progress=plain`
 - **시작**: `docker-compose up -d`
 - **상태 확인**: `docker-compose ps`

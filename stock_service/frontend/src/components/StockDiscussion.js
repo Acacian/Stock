@@ -2,13 +2,19 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useParams } from 'react-router-dom';
-import { Typography, TextField, Button, List, ListItem, ListItemText, CircularProgress } from '@material-ui/core';
-import { useErrorHandler } from 'react-error-boundary';
+import { Typography, TextField, Button, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
+import { ErrorBoundary } from 'react-error-boundary';
+
+const ErrorFallback = ({ error }) => (
+  <div role="alert">
+    <p>Something went wrong:</p>
+    <pre>{error.message}</pre>
+  </div>
+);
 
 const CommentForm = React.memo(({ stockId, onCommentAdded }) => {
   const [newComment, setNewComment] = useState('');
   const { user } = useAuth();
-  const handleError = useErrorHandler();
 
   const handleAddComment = useCallback(async () => {
     if (newComment.trim() && user) {
@@ -20,10 +26,10 @@ const CommentForm = React.memo(({ stockId, onCommentAdded }) => {
         onCommentAdded(response.data);
         setNewComment('');
       } catch (error) {
-        handleError(error);
+        console.error('Error adding comment:', error);
       }
     }
-  }, [newComment, user, stockId, onCommentAdded, handleError]);
+  }, [newComment, user, stockId, onCommentAdded]);
 
   return (
     <div>
@@ -63,7 +69,6 @@ const StockDiscussion = () => {
   const [hasMore, setHasMore] = useState(true);
   const { user } = useAuth();
   const { stockId } = useParams();
-  const handleError = useErrorHandler();
 
   const fetchComments = useCallback(async () => {
     try {
@@ -73,11 +78,11 @@ const StockDiscussion = () => {
       setHasMore(!response.data.last);
       setPage(prevPage => prevPage + 1);
     } catch (error) {
-      handleError(error);
+      console.error('Error fetching comments:', error);
     } finally {
       setLoading(false);
     }
-  }, [stockId, page, handleError]);
+  }, [stockId, page]);
 
   useEffect(() => {
     fetchComments();
@@ -96,19 +101,21 @@ const StockDiscussion = () => {
   ), [comments]);
 
   return (
-    <div>
-      <Typography variant="h5">종목 토론실</Typography>
-      {user ? (
-        <CommentForm stockId={stockId} onCommentAdded={handleCommentAdded} />
-      ) : (
-        <Typography>댓글을 작성하려면 로그인이 필요합니다.</Typography>
-      )}
-      {memoizedComments}
-      {loading && <CircularProgress aria-label="로딩 중" />}
-      {!loading && hasMore && (
-        <Button onClick={fetchComments} aria-label="더 보기">더 보기</Button>
-      )}
-    </div>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div>
+        <Typography variant="h5">종목 토론실</Typography>
+        {user ? (
+          <CommentForm stockId={stockId} onCommentAdded={handleCommentAdded} />
+        ) : (
+          <Typography>댓글을 작성하려면 로그인이 필요합니다.</Typography>
+        )}
+        {memoizedComments}
+        {loading && <CircularProgress aria-label="로딩 중" />}
+        {!loading && hasMore && (
+          <Button onClick={fetchComments} aria-label="더 보기">더 보기</Button>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 };
 

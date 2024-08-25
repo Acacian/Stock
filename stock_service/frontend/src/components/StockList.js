@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { List, ListItem, ListItemText, TextField, Button, CircularProgress, Typography } from '@material-ui/core';
+import { List, ListItem, ListItemText, TextField, Button, CircularProgress, Typography } from '@mui/material';
 import { debounce } from 'lodash';
 import { getAllStocks, searchStocks } from '../services/StockApi';
 

@@ -10,13 +10,23 @@ RUN --mount=type=cache,target=/home/gradle/.gradle,sharing=private \
     -Dorg.gradle.internal.http.connectionTimeout=120000
 
 # Frontend Build Stage
-FROM node:14 AS frontend-build
+FROM node:18 AS frontend-build
 WORKDIR /app/frontend
 COPY stock_service/frontend/package*.json ./
+RUN npm install -g npm@latest
 RUN npm install
-RUN npm install --save-dev @babel/plugin-proposal-private-property-in-object
-RUN npm install react-router-dom
-RUN npm install axios 
+RUN npm install --save \
+    axios \
+    @mui/material \
+    @mui/icons-material \
+    @emotion/react \
+    @emotion/styled \
+    react-router-dom \
+    react-error-boundary@latest \
+    recharts \
+    lodash
+RUN npm install --save-dev \
+    @babel/plugin-proposal-private-property-in-object
 COPY stock_service/frontend .
 RUN npm run build
 

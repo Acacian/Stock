@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Typography, CircularProgress, Button } from '@material-ui/core';
+import { Typography, CircularProgress, Button } from '@mui/material';
 import { getStockPrices } from '../services/StockApi';
 
 const StockChart = ({ stockId }) => {

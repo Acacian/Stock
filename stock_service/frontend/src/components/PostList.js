@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { List, ListItem, ListItemText, CircularProgress, Typography, Button, Select, MenuItem } from '@material-ui/core';
-import ThumbUpIcon from '@material-ui/icons/ThumbUp';
+import { List, ListItem, ListItemText, CircularProgress, Typography, Button, Select, MenuItem } from '@mui/material';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import { getAllStocks } from '../services/StockApi';
 
 const PostList = () => {

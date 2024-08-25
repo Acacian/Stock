@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { List, ListItem, ListItemText, CircularProgress, Typography, Button } from '@material-ui/core';
+import { List, ListItem, ListItemText, CircularProgress, Typography, Button } from '@mui/material';
 
 const CommentList = ({ postId }) => {
   const [comments, setComments] = useState([]);

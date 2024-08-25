@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Typography, Paper, CircularProgress } from '@material-ui/core';
+import { Typography, Paper, CircularProgress } from '@mui/material';
 import StockChart from './StockChart';
 import StockDiscussion from './StockDiscussion';
 import { getStockById } from '../services/StockApi';
