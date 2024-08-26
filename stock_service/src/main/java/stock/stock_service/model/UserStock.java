@@ -3,12 +3,14 @@ package stock.stock_service.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.cache.annotation.Cacheable;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_stocks")
 @Getter
 @Setter
+@Cacheable("userStocks")
 public class UserStock {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

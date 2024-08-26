@@ -42,6 +42,8 @@
 
 2. `eureka_server`에서 Self-Preservation Mode를 `True`로 설정하면 일시적인 네트워크 문제로 인한 서비스 손실을 방지할 수 있습니다.
 
+3. 본 프로젝트 중 일부는 SSL(HTTPS)이 적용되어 있습니다. 따라서, keystore.p12 파일을 직접 만든 후 비밀번호를 env 파일에, user_service의 resources에 넣어 주셔야 정상적으로 작동합니다.
+
 ## 📊 ERD
 
 루트 디렉토리에 있는 `erd.sql` 및 `erd.vuerd.json` 파일을 참고해 주세요. 뉴스피드는 쿼리 수가 많아 Kafka와 Redis를 사용해 테이블 없이 구현되었습니다.

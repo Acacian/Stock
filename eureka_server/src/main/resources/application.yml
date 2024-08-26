@@ -14,8 +14,21 @@ eureka:
   server:
     waitTimeInMsWhenSyncEmpty: 0
     enableSelfPreservation: false
+    peer-node-read-timeout-ms: 30000  
+  instance:
+    lease-renewal-interval-in-seconds: 10  
+    lease-expiration-duration-in-seconds: 30 
 
 logging:
   level:
-    com.netflix.eureka: ERROR
-    com.netflix.discovery: ERROR
+    com.netflix.eureka: DEBUG
+    com.netflix.discovery: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

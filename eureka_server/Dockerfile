@@ -8,6 +8,7 @@ RUN ./gradlew :eureka_server:build -x test --no-daemon
 # Run stage
 FROM openjdk:17-jdk-slim
 WORKDIR /app
+RUN apt-get update && apt-get install -y curl
 COPY --from=build /app/eureka_server/build/libs/*.jar app.jar
 COPY --from=build /app/eureka_server/src/main/resources/application.yml /app/
 COPY --from=build /app/eureka_server/src/test/resources/application-test.yml /app/

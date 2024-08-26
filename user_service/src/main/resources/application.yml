@@ -84,18 +84,17 @@ eureka:
   client:
     serviceUrl:
       defaultZone: https://eureka-server:8761/eureka/
-    fetch-registry: true
-    register-with-eureka: true
   instance:
-    preferIpAddress: true
     securePortEnabled: true
     nonSecurePortEnabled: false
+    securePort: ${server.port}
 
 feign:
   client:
     config:
       default:
         loggerLevel: basic
+    url: https://localhost:8443
 
 resilience4j:
   circuitbreaker:
