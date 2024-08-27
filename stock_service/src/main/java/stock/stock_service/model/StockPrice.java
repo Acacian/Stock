@@ -3,6 +3,8 @@ package stock.stock_service.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -11,15 +13,18 @@ import java.time.LocalDate;
 @Table(name = "stock_prices")
 @Getter
 @Setter
-@IdClass(StockPrice.StockPriceId.class)
+@NoArgsConstructor
+@AllArgsConstructor
 @Cacheable("stockPrices")
-public class StockPrice {
+public class StockPrice implements Serializable {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_id", nullable = false)
     private Stock stock;
     
-    @Id
     @Column(nullable = false)
     private LocalDate date;
     
@@ -47,23 +52,16 @@ public class StockPrice {
     @Column(name = "trading_amount")
     private long tradingAmount;
 
-    public static class StockPriceId implements Serializable {
-        private Long stock;
-        private LocalDate date;
-
-        // Constructors, equals, and hashCode methods
-    }
-
-    // Constructors
-    public StockPrice() {}
-
-    public StockPrice(Stock stock, LocalDate date, int openPrice, int highPrice, int lowPrice, int closePrice, long volume) {
+    // Constructor for weekly and monthly aggregation
+    public StockPrice(Long id, Stock stock, LocalDate date, double openPrice, int highPrice, int lowPrice, int closePrice, long volume, long tradingAmount) {
+        this.id = id;
         this.stock = stock;
         this.date = date;
-        this.openPrice = openPrice;
+        this.openPrice = (int) openPrice;
         this.highPrice = highPrice;
         this.lowPrice = lowPrice;
         this.closePrice = closePrice;
         this.volume = volume;
+        this.tradingAmount = tradingAmount;
     }
 }

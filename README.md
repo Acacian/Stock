@@ -5,7 +5,7 @@
 
 ## 💻 사용된 프레임워크 및 아키텍처
 
-![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-F2F4F9?style=for-the-badge&logo=spring-boot) ![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white) ![MSA](https://img.shields.io/badge/MSA-00897B?style=for-the-badge) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Zookeeper](https://img.shields.io/badge/Zookeeper-FF4B4B?style=for-the-badge&logo=apache-zookeeper&logoColor=white) ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white) ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white) ![Eureka](https://img.shields.io/badge/Eureka-4DB33D?style=for-the-badge&logo=spring&logoColor=white) ![WebRTC](https://img.shields.io/badge/WebRTC-333333?style=for-the-badge&logo=webrtc&logoColor=white) ![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=websocket&logoColor=white)
+![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-F2F4F9?style=for-the-badge&logo=spring-boot) ![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white) ![MSA](https://img.shields.io/badge/MSA-00897B?style=for-the-badge) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Zookeeper](https://img.shields.io/badge/Zookeeper-FF4B4B?style=for-the-badge&logo=apache-zookeeper&logoColor=white) ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white) ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white) ![Eureka](https://img.shields.io/badge/Eureka-4DB33D?style=for-the-badge&logo=spring&logoColor=white) ![WebRTC](https://img.shields.io/badge/WebRTC-333333?style=for-the-badge&logo=webrtc&logoColor=white) ![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=websocket&logoColor=white) ![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white) ![SSL](https://img.shields.io/badge/SSL-3A9B35?style=for-the-badge&logo=let's-encrypt&logoColor=white)
 
 ## 🚪 포트 구성
 
@@ -17,8 +17,8 @@
 - **Kafka**: `9092`
 - **Zookeeper**: `2181`
 - **Jenkins**: `8080`
-- **API Gateway**: `8081`
-- **User Service**: `8082`
+- **API Gateway**: `8081` (SSL 적용)
+- **User Service**: `8443` (SSL 적용)
 - **Newsfeed Service**: `8083`
 - **Social Service**: `8084`
 - **Stock Service**: `8085`
@@ -38,7 +38,50 @@
 ## 🚀 설치 및 설정 방법
 
 1. `.env` 파일을 생성한 후, 자신의 환경에 맞게 설정을 추가해 주세요.  
-   특히 `MODE=prod` 여부를 확인해 주시고, 테스트 파일로 실행할 시 `test`로 변경해 주세요.
+   특히 `MODE=prod` 여부를 확인해 주시고, 테스트 파일로 실행할 시 `test`로 변경해 주세요. 개인정보인 부분은 제외시켰으므로, 그 부분만 채워넣으시면 됩니다.
+
+```
+# Test여부(prod / test에 따라 dockerfile 세팅이 바뀜)
+MODE=prod
+
+# DB
+DB_PASSWORD=
+SPRING_DATASOURCE_USERNAME=root
+DB_NAME=Stock
+
+# Port
+SERVERS=db
+KAFKA_SERVERS=kafka
+KAFKA_PORT=9092
+REDIS_HOST=redis
+REDIS_PORT=6379
+EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+JWT_SECRET=
+
+# Email Verification (env와 별개로, 구글에서 따로 설정해주셔야 합니다.)
+APP_DOMAIN=localhost
+SENDING_EMAIL=
+EMAIL_PASSWORD=
+
+# Test Script
+DOCKER_GROUP_ID=
+TEST_EMAIL=
+TEST_DB_PASSWORD=
+
+# Frontend
+REACT_APP_AUTH_URL=https://localhost/api/auth
+REACT_APP_SOCIAL_API_URL=http://localhost/api/social
+REACT_APP_NEWSFEED_API_URL=http://localhost/api/newsfeed
+REACT_APP_SOCKET_URL=http://localhost/ws
+REACT_APP_API_GATEWAY_URL=https://localhost/api
+
+# HTTPS
+SSL_KEY_STORE_PASSWORD=
+
+# Upload Path
+APP_UPLOAD_DIR=/path/to/upload/directory
+APP_UPLOAD_URL=https://stock/uploads
+```
 
 2. `eureka_server`에서 Self-Preservation Mode를 `True`로 설정하면 일시적인 네트워크 문제로 인한 서비스 손실을 방지할 수 있습니다.
 

@@ -85,9 +85,12 @@ eureka:
     serviceUrl:
       defaultZone: https://eureka-server:8761/eureka/
   instance:
+    hostname: localhost
     securePortEnabled: true
     nonSecurePortEnabled: false
-    securePort: ${server.port}
+    homePageUrl: https://${eureka.instance.hostname}:${server.port}/
+    statusPageUrl: https://${eureka.instance.hostname}:${server.port}/actuator/info
+    healthCheckUrl: https://${eureka.instance.hostname}:${server.port}/actuator/health
 
 feign:
   client:

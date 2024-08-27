@@ -1,78 +1,108 @@
-const API_URL = process.env.REACT_APP_AUTH_URL || '/api/auth';
+import axios from 'axios';
 
-const getAuthHeader = () => {
+const API_URL = process.env.REACT_APP_API_GATEWAY_URL || process.env.REACT_APP_AUTH_URL || 'https://localhost/api/auth';
+
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-const handleResponse = async (response) => {
-  if (!response.ok) {
-    if (response.status === 401) {
-      // Auto logout if 401 response returned from api
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
       window.location.reload(true);
-      throw new Error('Unauthorized access');
     }
-
-    const error = await response.text();
-    throw new Error(error || response.statusText);
+    return Promise.reject(error);
   }
-  const contentType = response.headers.get("content-type");
-  if (contentType && contentType.indexOf("application/json") !== -1) {
-    return response.json();
+);
+
+const handleApiError = (error) => {
+  if (error.response) {
+    // 서버에서 응답을 받은 경우
+    throw new Error(error.response.data.message || '서버 오류가 발생했습니다.');
+  } else if (error.request) {
+    // 요청이 전송되었지만 응답을 받지 못한 경우
+    throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해 주세요.');
+  } else {
+    // 요청 설정 중 오류가 발생한 경우
+    throw new Error('예기치 않은 오류가 발생했습니다.');
   }
-  return response.text();
 };
 
-export const registerUser = (userData) => {
-  return fetch(`${API_URL}/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeader(),
-    },
-    body: JSON.stringify(userData),
-  }).then(handleResponse);
+export const registerUser = async (userData) => {
+  try {
+    const response = await axiosInstance.post('/register', userData);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
-export const loginUser = (email, password) => {
-  return fetch(`${API_URL}/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email, password }),
-  }).then(handleResponse);
+export const loginUser = async (email, password) => {
+  try {
+    const response = await axiosInstance.post('/login', { email, password });
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
-export const logoutUser = () => {
-  return fetch(`${API_URL}/logout`, {
-    method: 'POST',
-    headers: getAuthHeader(),
-  }).then(handleResponse);
+export const logoutUser = async () => {
+  try {
+    await axiosInstance.post('/logout');
+    localStorage.removeItem('token');
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
-export const getUserProfile = (userId) => {
-  return fetch(`${API_URL}/users/${userId}`, {
-    headers: getAuthHeader(),
-  }).then(handleResponse);
+export const getUserProfile = async (userId) => {
+  try {
+    const response = await axiosInstance.get(`/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
-export const updateUserProfile = (userId, profileData) => {
-  return fetch(`${API_URL}/users/${userId}`, {
-    method: 'PUT',
-    headers: getAuthHeader(),
-    body: profileData,
-  }).then(handleResponse);
+export const updateUserProfile = async (userId, profileData) => {
+  try {
+    const response = await axiosInstance.put(`/users/${userId}`, profileData);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
-export const updatePassword = (userId, oldPassword, newPassword) => {
-  return fetch(`${API_URL}/password`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeader(),
-    },
-    body: JSON.stringify({ userId, oldPassword, newPassword }),
-  }).then(handleResponse);
+export const updatePassword = async (userId, oldPassword, newPassword) => {
+  try {
+    const response = await axiosInstance.put('/password', { userId, oldPassword, newPassword });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const checkAuthStatus = async () => {
+  try {
+    const response = await axiosInstance.get('/check');
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
 };

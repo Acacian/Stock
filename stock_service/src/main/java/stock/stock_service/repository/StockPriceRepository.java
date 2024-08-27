@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface StockPriceRepository extends JpaRepository<StockPrice, StockPrice.StockPriceId> {
+public interface StockPriceRepository extends JpaRepository<StockPrice, Long> {
 
     @Cacheable(value = "stockPrices", key = "#stockCode + '-' + #date")
     @Query("SELECT sp FROM StockPrice sp WHERE sp.stock.code = :stockCode AND sp.date = :date")
@@ -37,7 +37,7 @@ public interface StockPriceRepository extends JpaRepository<StockPrice, StockPri
     Optional<StockPrice> findFirstByStockOrderByDateDesc(Stock stock);
 
     @Cacheable(value = "latestStockPrices", key = "#stockCode")
-    @Query("SELECT sp FROM StockPrice sp WHERE sp.stock.code = :stockCode ORDER BY sp.date DESC LIMIT 1")
+    @Query("SELECT sp FROM StockPrice sp WHERE sp.stock.code = :stockCode ORDER BY sp.date DESC")
     Optional<StockPrice> findLatestByStockCode(@Param("stockCode") String stockCode);
 
     @Cacheable(value = "stockPriceRanges", key = "#stock.id + '-' + #startDate + '-' + #endDate")
@@ -46,19 +46,19 @@ public interface StockPriceRepository extends JpaRepository<StockPrice, StockPri
     Page<StockPrice> findByStockOrderByDateDesc(Stock stock, Pageable pageable);
 
     @Cacheable(value = "weeklyPrices", key = "#stockId + '-' + #startDate + '-' + #endDate")
-    @Query("SELECT new StockPrice(MAX(sp.id), sp.stock, sp.date, AVG(sp.openPrice), MAX(sp.highPrice), " +
-           "MIN(sp.lowPrice), sp.closePrice, SUM(sp.volume), SUM(sp.tradingAmount)) " +
+    @Query("SELECT new StockPrice(MAX(sp.id), sp.stock, MAX(sp.date), AVG(sp.openPrice), MAX(sp.highPrice), " +
+           "MIN(sp.lowPrice), MAX(sp.closePrice), SUM(sp.volume), SUM(sp.tradingAmount)) " +
            "FROM StockPrice sp WHERE sp.stock.id = :stockId AND sp.date BETWEEN :startDate AND :endDate " +
-           "GROUP BY FUNCTION('YEARWEEK', sp.date) ORDER BY sp.date")
+           "GROUP BY FUNCTION('YEARWEEK', sp.date) ORDER BY MAX(sp.date)")
     List<StockPrice> findWeeklyPrices(@Param("stockId") Long stockId, 
                                       @Param("startDate") LocalDate startDate, 
                                       @Param("endDate") LocalDate endDate);
 
     @Cacheable(value = "monthlyPrices", key = "#stockId + '-' + #startDate + '-' + #endDate")
-    @Query("SELECT new StockPrice(MAX(sp.id), sp.stock, sp.date, AVG(sp.openPrice), MAX(sp.highPrice), " +
-           "MIN(sp.lowPrice), sp.closePrice, SUM(sp.volume), SUM(sp.tradingAmount)) " +
+    @Query("SELECT new StockPrice(MAX(sp.id), sp.stock, MAX(sp.date), AVG(sp.openPrice), MAX(sp.highPrice), " +
+           "MIN(sp.lowPrice), MAX(sp.closePrice), SUM(sp.volume), SUM(sp.tradingAmount)) " +
            "FROM StockPrice sp WHERE sp.stock.id = :stockId AND sp.date BETWEEN :startDate AND :endDate " +
-           "GROUP BY FUNCTION('YEAR', sp.date), FUNCTION('MONTH', sp.date) ORDER BY sp.date")
+           "GROUP BY FUNCTION('YEAR', sp.date), FUNCTION('MONTH', sp.date) ORDER BY MAX(sp.date)")
     List<StockPrice> findMonthlyPrices(@Param("stockId") Long stockId, 
                                        @Param("startDate") LocalDate startDate, 
                                        @Param("endDate") LocalDate endDate);

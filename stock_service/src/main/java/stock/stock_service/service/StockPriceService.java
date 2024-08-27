@@ -11,6 +11,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.kafka.core.KafkaTemplate;
 import stock.stock_service.model.Stock;
 import stock.stock_service.model.StockPrice;
 import stock.stock_service.repository.StockPriceRepository;
@@ -46,6 +47,9 @@ public class StockPriceService {
     @Autowired
     private ApiRateLimiter apiRateLimiter;
 
+    @Autowired
+    private KafkaTemplate<String, StockPrice> kafkaTemplate;
+
     @Transactional
     @Retryable(value = {RestClientException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void fetchAndSaveStockPrices(Stock stock, int count) {
@@ -54,7 +58,15 @@ public class StockPriceService {
         String apiResponse = restTemplate.getForObject(NAVER_STOCK_API_URL, String.class, stock.getCode(), count);
         List<StockPrice> stockPrices = parseApiResponse(apiResponse, stock);
         stockPriceRepository.saveAll(stockPrices);
+        for (StockPrice stockPrice : stockPrices) {
+            sendStockPriceToKafka(stockPrice);
+        }
         log.info("Saved {} price records for stock {}", stockPrices.size(), stock.getCode());
+    }
+
+    private void sendStockPriceToKafka(StockPrice stockPrice) {
+        kafkaTemplate.send("stock-prices", stockPrice.getStock().getCode(), stockPrice);
+        log.info("Sent stock price to Kafka: {}", stockPrice);
     }
 
     @Cacheable(value = "stock-prices", key = "#stock.code + ':' + #count")

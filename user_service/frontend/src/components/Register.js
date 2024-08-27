@@ -18,16 +18,22 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    console.log('Sending registration data:', userData);
     try {
       await registerUser(userData);
-      alert('Registration successful. Please check your email for verification.');
+      alert('회원가입이 성공적으로 완료되었습니다. 이메일을 확인해 주세요.');
       navigate('/login');
     } catch (error) {
-      if (error.response && error.response.data) {
-        // Handle specific error messages from the server
-        setError(error.response.data.message || 'Registration failed. Please try again.');
+      console.error('Registration error:', error);
+      if (error.response) {
+        // 서버에서 응답을 받은 경우
+        setError(error.response.data.message || '회원가입에 실패했습니다. 다시 시도해 주세요.');
+      } else if (error.request) {
+        // 요청이 전송되었지만 응답을 받지 못한 경우
+        setError('서버에 연결할 수 없습니다. 네트워크 연결을 확인해 주세요.');
       } else {
-        setError('An unexpected error occurred. Please try again.');
+        // 요청 설정 중 오류가 발생한 경우
+        setError('예기치 않은 오류가 발생했습니다. 다시 시도해 주세요.');
       }
     }
   };

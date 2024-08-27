@@ -9,9 +9,10 @@ spring:
     url: jdbc:mysql://${SERVERS:db}:3306/Stock
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${DB_PASSWORD}
-  redis:
-    host: redis
-    port: 6379
+  data:
+    redis:
+      host: redis
+      port: 6379
   jpa:
     hibernate:
       ddl-auto: update

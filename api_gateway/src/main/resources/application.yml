@@ -1,4 +1,9 @@
 server:
+  ssl:
+    key-store: classpath:apigateway.p12
+    key-store-password: ${SSL_KEY_STORE_PASSWORD}
+    key-store-type: PKCS12
+    key-alias: apigateway
   port: 8081
 
 spring:
@@ -8,12 +13,19 @@ spring:
     name: API-GATEWAY
   cloud:
     gateway:
+      httpclient:
+        ssl:
+          useInsecureTrustManager: true
+      default-filters:
+        - RedirectTo=302, https://localhost:8081
       globalcors:
         corsConfigurations:
           '[/**]':
             allowedOrigins: 
               - "http://localhost:3001"
+              - "https://localhost:3001"
               - "http://localhost"
+              - "https://localhost"
             allowedMethods:
               - GET
               - POST
@@ -36,14 +48,15 @@ spring:
           filters:
             - AuthenticationFilter
             - RateLimitingFilter
+
         - id: user_service
-          uri: lb://USER-SERVICE
+          uri: lb:https://USER-SERVICE
           predicates:
             - Path=/api/auth/**
           filters:
             - RateLimitingFilter
         - id: user_service_protected
-          uri: lb://USER-SERVICE
+          uri: lb:https://USER-SERVICE
           predicates:
             - Path=/api/auth/check, /api/auth/logout, /api/auth/password, /api/auth/users/**
           filters:

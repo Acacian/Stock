@@ -11,6 +11,9 @@ import stock.user_service.dto.JwtAuthenticationResponse;
 import stock.user_service.dto.UpdatePasswordRequest;
 import stock.user_service.exception.GlobalExceptionHandler.EmailAlreadyExistsException;
 import stock.user_service.exception.GlobalExceptionHandler.InvalidTokenException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import jakarta.validation.Valid;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,15 +27,11 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(
-            @RequestParam String name,
-            @RequestParam String email,
-            @RequestParam String password) {
-        User user = new User();
-        user.setName(name);
-        user.setEmail(email);
-        user.setPassword(password);
+    public ResponseEntity<?> registerUser(@Valid @RequestBody User user) {
+        logger.debug("Received registration request: {}", user);
         try {
             return ResponseEntity.ok(authService.registerUser(user));
         } catch (EmailAlreadyExistsException e) {

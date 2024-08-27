@@ -16,18 +16,20 @@ public class UserStock {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "stock_id")
+    @JoinColumn(name = "stock_id", nullable = false)
     private Stock stock;
 
+    @Column(nullable = false)
     private boolean watchlist;
 
+    @Column(nullable = false)
     private int quantity;
 
-    @Column(name = "average_price")
+    @Column(name = "average_price", nullable = false)
     private int averagePrice;
 
     @Column(name = "last_trade_date")
