@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.cache.annotation.Cacheable;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,14 +12,14 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Cacheable("userStocks")
-public class UserStock {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@IdClass(UserStockId.class)  // 복합 키를 정의
+public class UserStock implements Serializable {
 
+    @Id
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_id", nullable = false)
     private Stock stock;

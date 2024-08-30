@@ -10,6 +10,8 @@ import stock.stock_service.model.Stock;
 import stock.stock_service.model.StockPrice;
 import stock.stock_service.service.StockPriceService;
 import stock.stock_service.service.StockService;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -102,5 +104,41 @@ public class StockController {
             @PathVariable String code,
             Pageable pageable) {
         return ResponseEntity.ok(stockPriceService.getStockPriceHistory(code, pageable));
+    }
+
+    @GetMapping("/sorted")
+    public ResponseEntity<Page<Stock>> getSortedStocks(
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false, defaultValue = "DESC") String sortDirection,
+            Pageable pageable) {
+        Sort.Direction direction = Sort.Direction.fromString(sortDirection);
+        Page<Stock> stocks;
+        
+        if ("tradingAmount".equals(sortBy)) {
+            stocks = stockService.getStocksSortedByYesterdayTrading(direction, pageable);
+        } else if ("changeRate".equals(sortBy)) {
+            stocks = stockService.getStocksSortedByYesterdayChangeRate(direction, pageable);
+        } else {
+            stocks = stockService.getAllStocks(pageable);
+        }
+        
+        return ResponseEntity.ok(stocks);
+    }
+
+    @Autowired
+    private RedisTemplate<String, List<Double>> listDoubleRedisTemplate;
+
+    @GetMapping("/{stockCode}/indicators/{indicatorType}")
+    public ResponseEntity<List<Double>> getTechnicalIndicator(
+            @PathVariable String stockCode,
+            @PathVariable String indicatorType) {
+        String key = indicatorType + ":" + stockCode;
+        List<Double> indicatorData = listDoubleRedisTemplate.opsForValue().get(key);
+        
+        if (indicatorData != null) {
+            return ResponseEntity.ok(indicatorData);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

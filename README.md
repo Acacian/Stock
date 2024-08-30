@@ -18,7 +18,7 @@
 - **Zookeeper**: `2181`
 - **Jenkins**: `8080`
 - **API Gateway**: `8081` (SSL 적용)
-- **User Service**: `8443` (SSL 적용)
+- **User Service**: `8444` (SSL 적용)
 - **Newsfeed Service**: `8083`
 - **Social Service**: `8084`
 - **Stock Service**: `8085`
@@ -28,8 +28,9 @@
 
 ## 🛠 문제 해결 (Troubleshooting)
 
-- RestApi를 통한 통신 시, 요청과 응답이 즉시 이루어지지 않아 성능 저하가 발생  
-  > Kafka를 사용한 이벤트 통신을 통해 비동기 처리로 성능을 개선
+- SSL 적용 시, 기존의 Eureka Service Discovery와 충돌 현상 발생 
+  > API Gateway에서 SSL을 처리하고, 응답을 HTTP로 변환 후 내부 서비스 통신은 Eureka를 통해 관리
+  > 이를 통해 타 서비스는 HTTP로, 보안이 중요한 User-Service는 HTTPS로 통신
 
 - 로그아웃을 RefreshToken을 제거하는 방식으로 구현했으나, 토큰을 재사용해서 로그인할 수 있었음
   > Redis를 사용한 블랙리스트 방식으로 개선하여 토큰 관리 효율성과 보안을 강화

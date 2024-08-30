@@ -19,8 +19,8 @@ spring:
           batch_size: 50
   data:
     redis:
-      host: ${REDIS_HOST:redis}
-      port: ${REDIS_PORT:6379}
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
       time-to-live: 3600000
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9092}

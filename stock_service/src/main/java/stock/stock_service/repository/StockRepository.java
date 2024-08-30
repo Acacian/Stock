@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.Cacheable;
 import stock.stock_service.model.Stock;
+import org.springframework.data.domain.Sort;
+import java.time.LocalDate;
 
 import java.util.Optional;
 import java.util.List;
@@ -44,6 +46,19 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
             Pageable pageable
     );
 
-    @Cacheable(value = "topStocks", key = "#marketType")
-    List<Stock> findTop100ByMarketTypeOrderByMarketCapDesc(Stock.MarketType marketType);
+    @Cacheable(value = "allStocks")
+    @Query("SELECT s FROM Stock s")
+    List<Stock> findAllStocks();
+
+    @Cacheable(value = "stocksByMarketType", key = "#marketType")
+    @Query("SELECT s FROM Stock s WHERE s.marketType = :marketType")
+    List<Stock> findAllByMarketType(@Param("marketType") Stock.MarketType marketType);
+
+    @Query("SELECT s FROM Stock s JOIN StockPrice sp ON s.id = sp.stock.id " +
+           "WHERE sp.date = :date")
+    Page<Stock> findAllSortedByYesterdayTrading(@Param("date") LocalDate date, Pageable pageable);
+
+    @Query("SELECT s FROM Stock s JOIN StockPrice sp ON s.id = sp.stock.id " +
+           "WHERE sp.date = :date")
+    Page<Stock> findAllSortedByYesterdayChangeRate(@Param("date") LocalDate date, Pageable pageable);
 }

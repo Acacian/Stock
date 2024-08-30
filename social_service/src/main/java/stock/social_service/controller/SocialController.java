@@ -27,7 +27,7 @@ public class SocialController {
 
     @PostMapping("/posts")
     public ResponseEntity<Post> createPost(@RequestBody CreatePostRequest request) {
-        Post post = socialService.createPost(request.getUserId(), request.getContent(), request.getStockId());
+        Post post = socialService.createPost(request.getUserId(), request.getTitle(), request.getContent(), request.getStockId());
         return ResponseEntity.ok(post);
     }
 
@@ -125,15 +125,20 @@ public class SocialController {
     }
 
     @GetMapping("/posts/search")
-    public ResponseEntity<Page<Post>> searchPosts(
+    public ResponseEntity<?> searchPosts(
             @RequestParam String query,
-            @RequestParam(required = false) Long stockId,
+            @RequestParam(defaultValue = "all") String searchType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection) {
-        Pageable pageable = PageRequest.of(page, size, 
-            Sort.by(Sort.Direction.fromString(sortDirection), sortBy));
-        return ResponseEntity.ok(socialService.searchPosts(query, stockId, pageable));
+        try {
+            Pageable pageable = PageRequest.of(page, size, 
+                Sort.by(Sort.Direction.fromString(sortDirection), sortBy));
+            Page<Post> results = socialService.searchPosts(query, searchType, pageable);
+            return ResponseEntity.ok(results);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

@@ -57,7 +57,7 @@ spring:
       time-to-live: 3600000 # 1 hour
 
 server:
-  port: 8443
+  port: 8444
   ssl:
     key-store: classpath:keystore.p12
     key-store-password: ${SSL_KEY_STORE_PASSWORD}
@@ -83,7 +83,7 @@ app:
 eureka:
   client:
     serviceUrl:
-      defaultZone: https://eureka-server:8761/eureka/
+      defaultZone: http://eureka-server:8761/eureka/
   instance:
     hostname: localhost
     securePortEnabled: true
@@ -97,7 +97,7 @@ feign:
     config:
       default:
         loggerLevel: basic
-    url: https://localhost:8443
+    url: https://user-service:8444
 
 resilience4j:
   circuitbreaker:

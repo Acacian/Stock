@@ -50,6 +50,15 @@ subprojects {
         }
     }
 
+    // Stock Service에만 적용되는 의존성
+    if (project.name == 'stock_service') {
+        dependencies {
+            implementation 'org.springframework.retry:spring-retry'
+            implementation 'org.springframework.boot:spring-boot-starter-aop'
+            implementation 'org.springframework.boot:spring-boot-starter-batch'
+        }
+    }
+
     // User Service에만 적용되는 의존성
     if (project.name == 'user_service') {
         dependencies {

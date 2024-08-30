@@ -2,12 +2,15 @@ package stock.stock_service.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import stock.stock_service.model.Stock;
 import stock.stock_service.repository.StockRepository;
 
+import org.springframework.data.domain.Sort;
+import java.time.LocalDate;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 
@@ -79,11 +82,28 @@ public class StockService {
     }
 
     @Transactional(readOnly = true)
-    public List<Stock> getStocksToUpdate() {
-        List<Stock> kospiStocks = stockRepository.findTop100ByMarketTypeOrderByMarketCapDesc(Stock.MarketType.KOSPI);
-        List<Stock> kosdaqStocks = stockRepository.findTop100ByMarketTypeOrderByMarketCapDesc(Stock.MarketType.KOSDAQ);
-        
-        kospiStocks.addAll(kosdaqStocks);
-        return kospiStocks;
+    public List<Stock> getAllStocksToUpdate() {
+        return stockRepository.findAllStocks();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Stock> getAllStocksByMarketType(Stock.MarketType marketType) {
+        return stockRepository.findAllByMarketType(marketType);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Stock> getStocksSortedByYesterdayTrading(Sort.Direction direction, Pageable pageable) {
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        Sort sort = Sort.by(direction, "stockPrice.tradingAmount");
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+        return stockRepository.findAllSortedByYesterdayTrading(yesterday, sortedPageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Stock> getStocksSortedByYesterdayChangeRate(Sort.Direction direction, Pageable pageable) {
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        Sort sort = Sort.by(direction, "stockPrice.changeRate");
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+        return stockRepository.findAllSortedByYesterdayChangeRate(yesterday, sortedPageable);
     }
 }

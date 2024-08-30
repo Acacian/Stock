@@ -37,6 +37,16 @@ public class StockKafkaConfig {
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "stock-price-instance-" + UUID.randomUUID().toString());
+        
+        // End-to-end Batch Compression
+        props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        props.put(ProducerConfig.BATCH_SIZE_CONFIG, 32768);
+        props.put(ProducerConfig.LINGER_MS_CONFIG, 20);
+
+        // Quotas (직접 정의)
+        props.put("quota.producer.default", "1000000");  // 초당 1MB
+        props.put("quota.consumer.default", "1000000");  // 초당 1MB
+
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(),
                 new JsonDeserializer<>(StockPrice.class));
     }

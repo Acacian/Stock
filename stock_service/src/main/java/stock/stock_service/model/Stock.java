@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.cache.annotation.Cacheable;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "stocks")
@@ -25,6 +26,9 @@ public class Stock {
     @Enumerated(EnumType.STRING)
     @Column(name = "market_type", nullable = false)
     private MarketType marketType;
+
+    @Column(name = "last_updated")
+    private LocalDate lastUpdated;
     
     private String sector;
     
@@ -47,5 +51,13 @@ public class Stock {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public LocalDate getLastUpdated() {
+        return lastUpdated;
+    }
+
+    public void setLastUpdated(LocalDate lastUpdated) {
+        this.lastUpdated = lastUpdated;
     }
 }

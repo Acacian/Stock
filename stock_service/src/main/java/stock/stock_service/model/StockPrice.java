@@ -16,45 +16,44 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Cacheable("stockPrices")
+@IdClass(StockPriceId.class)  // 복합 키를 정의
 public class StockPrice implements Serializable {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
+    @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_id", nullable = false)
     private Stock stock;
-    
+
+    @Id
     @Column(nullable = false)
     private LocalDate date;
-    
+
     @Column(name = "open_price", nullable = false)
     private int openPrice;
-    
+
     @Column(name = "high_price", nullable = false)
     private int highPrice;
-    
+
     @Column(name = "low_price", nullable = false)
     private int lowPrice;
-    
+
     @Column(name = "close_price", nullable = false)
     private int closePrice;
-    
+
     @Column(nullable = false)
     private long volume;
-    
+
     @Column(name = "change_amount")
     private int changeAmount;
-    
+
     @Column(name = "change_rate")
     private double changeRate;
-    
+
     @Column(name = "trading_amount")
     private long tradingAmount;
 
     // Constructor for weekly and monthly aggregation
-    public StockPrice(Long id, Stock stock, LocalDate date, double openPrice, int highPrice, int lowPrice, int closePrice, long volume, long tradingAmount) {
-        this.id = id;
+    public StockPrice(Stock stock, LocalDate date, double openPrice, int highPrice, int lowPrice, int closePrice, long volume, long tradingAmount) {
         this.stock = stock;
         this.date = date;
         this.openPrice = (int) openPrice;

@@ -7,7 +7,7 @@ function App() {
 
   useEffect(() => {
     const handleMessage = (event) => {
-      if (event.origin === 'http://localhost:3001' && event.data.type === 'USER_LOGGED_IN') {
+      if (event.origin === 'https://localhost:3001' && event.data.type === 'USER_LOGGED_IN') {
         setUser(event.data.user);
       }
     };

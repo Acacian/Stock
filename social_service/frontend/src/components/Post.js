@@ -28,6 +28,7 @@ const Post = ({ post, currentUserId }) => {
 
   return (
     <div className="post">
+      <h3>{post.title}</h3>
       <p>{post.content}</p>
       <button onClick={handleLike}>Like ({likeCount})</button>
       <div>

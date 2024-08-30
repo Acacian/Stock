@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.retry.RetryCallback;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
@@ -29,8 +31,13 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.kafka.support.SendResult;
+import org.springframework.retry.RetryContext;
+
 @Service
 public class StockPriceService {
+
+    private static final int BATCH_SIZE = 1000;
 
     private static final Logger log = LoggerFactory.getLogger(StockPriceService.class);
     private static final String NAVER_STOCK_API_URL = "https://fchart.stock.naver.com/sise.nhn?symbol={symbol}&timeframe=day&count={count}&requestType=0";
@@ -50,23 +57,82 @@ public class StockPriceService {
     @Autowired
     private KafkaTemplate<String, StockPrice> kafkaTemplate;
 
+    private static final String DEAD_LETTER_TOPIC = "dead-letter-stock-prices";
+
+    @Autowired
+    private RetryTemplate retryTemplate;
+
     @Transactional
     @Retryable(value = {RestClientException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public void fetchAndSaveStockPrices(Stock stock, int count) {
-        log.info("Fetching stock data for {} with count {}", stock.getCode(), count);
+    public void fetchAndSaveStockPrices(Stock stock, int days) {
+        log.info("Fetching stock data for {} with days {}", stock.getCode(), days);
         apiRateLimiter.checkRateLimit();
-        String apiResponse = restTemplate.getForObject(NAVER_STOCK_API_URL, String.class, stock.getCode(), count);
+        String apiResponse = restTemplate.getForObject(NAVER_STOCK_API_URL, String.class, stock.getCode(), days);
         List<StockPrice> stockPrices = parseApiResponse(apiResponse, stock);
-        stockPriceRepository.saveAll(stockPrices);
-        for (StockPrice stockPrice : stockPrices) {
-            sendStockPriceToKafka(stockPrice);
-        }
-        log.info("Saved {} price records for stock {}", stockPrices.size(), stock.getCode());
+        
+        CompletableFuture<Void> saveFuture = CompletableFuture.runAsync(() -> saveStockPricesInBatches(stockPrices));
+        CompletableFuture<Void> kafkaFuture = CompletableFuture.runAsync(() -> sendStockPricesToKafka(stockPrices));
+        
+        CompletableFuture.allOf(saveFuture, kafkaFuture).join();
+        
+        log.info("Processed {} price records for stock {}", stockPrices.size(), stock.getCode());
     }
 
-    private void sendStockPriceToKafka(StockPrice stockPrice) {
-        kafkaTemplate.send("stock-prices", stockPrice.getStock().getCode(), stockPrice);
-        log.info("Sent stock price to Kafka: {}", stockPrice);
+    private void saveStockPricesInBatches(List<StockPrice> stockPrices) {
+        for (int i = 0; i < stockPrices.size(); i += BATCH_SIZE) {
+            List<StockPrice> batch = stockPrices.subList(i, Math.min(i + BATCH_SIZE, stockPrices.size()));
+            try {
+                stockPriceRepository.saveAll(batch);
+                log.debug("Saved batch of {} stock prices", batch.size());
+            } catch (Exception e) {
+                log.error("Error saving batch of stock prices", e);
+                // 여기서 실패한 배치를 재시도하거나 dead letter queue로 보낼 수 있습니다.
+            }
+        }
+    }
+
+    @Transactional
+    public void saveStockPrices(List<StockPrice> stockPrices) {
+        stockPriceRepository.saveAll(stockPrices);
+    }
+
+    private void sendStockPricesToKafka(List<StockPrice> stockPrices) {
+        stockPrices.forEach(this::sendStockPriceToKafkaWithRetry);
+    }
+
+    private void sendStockPriceToKafkaWithRetry(StockPrice stockPrice) {
+        try {
+            retryTemplate.execute(new RetryCallback<Void, Exception>() {
+                @Override
+                public Void doWithRetry(RetryContext context) throws Exception {
+                    CompletableFuture<SendResult<String, StockPrice>> future = 
+                        kafkaTemplate.send("stock-prices", stockPrice.getStock().getCode(), stockPrice);
+                    
+                    future.thenAccept(result -> log.debug("Sent stock price to Kafka: {}", stockPrice))
+                          .exceptionally(ex -> {
+                              log.error("Error sending stock price to Kafka", ex);
+                              throw new RuntimeException("Failed to send message to Kafka", ex);
+                          });
+                    return null;
+                }
+            });
+        } catch (Exception e) {
+            log.error("Failed to send stock price to Kafka after retries", e);
+            sendToDeadLetterQueue(stockPrice);
+        }
+    }
+    
+    private void sendToDeadLetterQueue(StockPrice stockPrice) {
+        try {
+            kafkaTemplate.send(DEAD_LETTER_TOPIC, stockPrice.getStock().getCode(), stockPrice)
+                .thenAccept(result -> log.info("Sent stock price to Dead Letter Queue: {}", stockPrice))
+                .exceptionally(ex -> {
+                    log.error("Error sending stock price to Dead Letter Queue", ex);
+                    return null;
+                });
+        } catch (Exception e) {
+            log.error("Failed to send stock price to Dead Letter Queue", e);
+        }
     }
 
     @Cacheable(value = "stock-prices", key = "#stock.code + ':' + #count")

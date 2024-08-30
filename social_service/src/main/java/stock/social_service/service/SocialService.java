@@ -38,10 +38,11 @@ public class SocialService {
 
     private static final Logger logger = LoggerFactory.getLogger(SocialService.class);
 
-    public Post createPost(Long userId, String content, Long stockId) {
+    public Post createPost(Long userId, String title, String content, Long stockId) {
         try {
             Post post = new Post();
             post.setUserId(userId);
+            post.setTitle(title);
             post.setContent(content);
             post.setStockId(stockId);
             Post savedPost = postRepository.save(post);
@@ -187,11 +188,18 @@ public class SocialService {
         return postRepository.findByStockId(stockId, pageable);
     }
 
-    public Page<Post> searchPosts(String query, Long stockId, Pageable pageable) {
-        if (stockId != null) {
-            return postRepository.findByContentContainingAndStockId(query, stockId, pageable);
-        } else {
-            return postRepository.findByContentContaining(query, pageable);
+    public Page<Post> searchPosts(String query, String searchType, Pageable pageable) {
+        switch (searchType.toLowerCase()) {
+            case "title":
+                return postRepository.findByTitleContainingIgnoreCase(query, pageable);
+            case "author":
+                return postRepository.findByUserNameContainingIgnoreCase(query, pageable);
+            case "content":
+                return postRepository.findByContentContainingIgnoreCase(query, pageable);
+            case "all":
+                return postRepository.searchPosts(query, pageable);
+            default:
+                throw new IllegalArgumentException("Invalid search type: " + searchType);
         }
     }
 }

@@ -8,11 +8,11 @@ const handleResponse = async (response) => {
   return response.json();
 };
 
-export const createPost = (userId, content) =>
+export const createPost = (userId, title, content) =>
   fetch(`${API_URL}/posts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, content })
+    body: JSON.stringify({ userId, title, content })
   }).then(handleResponse);
 
 export const addComment = (userId, postId, content) =>
@@ -42,3 +42,13 @@ export const getFollowers = (userId) =>
 
 export const getFollowing = (userId) =>
   fetch(`${API_URL}/following/${userId}`).then(handleResponse);
+
+export const searchPosts = (query, stockId, page = 0, size = 10, sortBy = 'createdAt', sortDirection = 'desc') => {
+  let url = `${API_URL}/posts/search?query=${encodeURIComponent(query)}&page=${page}&size=${size}&sortBy=${sortBy}&sortDirection=${sortDirection}`;
+  
+  if (stockId) {
+    url += `&stockId=${stockId}`;
+  }
+
+  return fetch(url).then(handleResponse);
+};
