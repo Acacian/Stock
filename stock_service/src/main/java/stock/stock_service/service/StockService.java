@@ -106,4 +106,9 @@ public class StockService {
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
         return stockRepository.findAllSortedByYesterdayChangeRate(yesterday, sortedPageable);
     }
+
+    @Transactional
+    public void updateStocks(List<? extends Stock> stocks) {
+        stockRepository.saveAll(stocks);
+    }
 }

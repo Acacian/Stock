@@ -65,6 +65,10 @@ spring:
       - topStocks
     caffeine:
       spec: maximumSize=500,expireAfterAccess=600s
+  batch:
+    job:
+      enabled: false
+    initialize-schema: always
 
 server:
   port: 8085
@@ -125,3 +129,14 @@ management:
   health:
     circuitbreakers:
       enabled: true
+
+stock:
+  batch:
+    chunk-size: 100
+    days-to-fetch: 1
+  scheduler:
+    daily:
+      cron: "0 0 18 * * MON-FRI"
+    init:
+      cron: "0 0 1 * * ?"
+    historical-days: 1825

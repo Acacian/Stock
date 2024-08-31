@@ -97,19 +97,6 @@ CREATE TABLE user_stocks (
     INDEX (stock_id)
 ) COMMENT '사용자 주식 관심 및 보유';
 
--- 배치 작업 테이블
-CREATE TABLE batch_jobs (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    job_name VARCHAR(255) NOT NULL,
-    status ENUM('PENDING', 'RUNNING', 'COMPLETED', 'FAILED') NOT NULL,
-    start_time DATETIME,
-    end_time DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX (job_name),
-    INDEX (status)
-) COMMENT '배치 작업';
-
 -- Spring Batch 메타데이터 테이블
 CREATE TABLE BATCH_JOB_INSTANCE  (
     JOB_INSTANCE_ID BIGINT  NOT NULL PRIMARY KEY,
