@@ -57,12 +57,7 @@ spring:
       time-to-live: 3600000 # 1 hour
 
 server:
-  port: 8444
-  ssl:
-    key-store: classpath:keystore.p12
-    key-store-password: ${SSL_KEY_STORE_PASSWORD}
-    key-store-type: PKCS12
-    key-alias: tomcat
+  port: 8086
 
 logging:
   level:
@@ -83,21 +78,19 @@ app:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://eureka-server:8761/eureka/
+      defaultZone: ${EUREKA_SERVER_URL}
+    fetch-registry: true
+    register-with-eureka: true
   instance:
-    hostname: localhost
-    securePortEnabled: true
-    nonSecurePortEnabled: false
-    homePageUrl: https://${eureka.instance.hostname}:${server.port}/
-    statusPageUrl: https://${eureka.instance.hostname}:${server.port}/actuator/info
-    healthCheckUrl: https://${eureka.instance.hostname}:${server.port}/actuator/health
+    preferIpAddress: true
+    nonSecurePortEnabled: true
 
 feign:
   client:
     config:
       default:
         loggerLevel: basic
-    url: https://user-service:8444
+    url: http://user-service:8086
 
 resilience4j:
   circuitbreaker:

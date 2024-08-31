@@ -90,6 +90,7 @@ subprojects {
     // API Gateway에만 적용되는 의존성
     if (project.name == 'api_gateway') {
         dependencies {
+            implementation 'io.micrometer:micrometer-registry-prometheus'
             implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
             implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
             implementation "io.github.resilience4j:resilience4j-reactor:${resilience4jVersion}"

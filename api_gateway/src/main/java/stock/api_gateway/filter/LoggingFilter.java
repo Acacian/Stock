@@ -8,6 +8,7 @@ import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import org.springframework.http.HttpStatusCode;
 
 @Component
 public class LoggingFilter implements GlobalFilter, Ordered {
@@ -18,12 +19,15 @@ public class LoggingFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         long startTime = System.currentTimeMillis();
         String requestPath = exchange.getRequest().getPath().toString();
+        String method = exchange.getRequest().getMethod().toString();
+        String queryParams = exchange.getRequest().getQueryParams().toString();
 
         return chain.filter(exchange).then(Mono.fromRunnable(() -> {
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
-            logger.info("Request: {} | Status: {} | Duration: {}ms",
-                    requestPath, exchange.getResponse().getStatusCode(), duration);
+            HttpStatusCode statusCode = exchange.getResponse().getStatusCode();
+            logger.info("Request: {} {} | Query: {} | Status: {} | Duration: {}ms",
+                    method, requestPath, queryParams, statusCode, duration);
         }));
     }
 

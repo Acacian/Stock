@@ -18,7 +18,15 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
         exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
-        String errorMessage = "{\"error\": \"" + ex.getMessage() + "\"}";
+        String errorCode = "INTERNAL_SERVER_ERROR";
+        if (ex instanceof IllegalArgumentException) {
+            exchange.getResponse().setStatusCode(HttpStatus.BAD_REQUEST);
+            errorCode = "BAD_REQUEST";
+        }
+
+        String errorMessage = String.format("{\"error\": \"%s\", \"message\": \"%s\", \"status\": %d}",
+                errorCode, ex.getMessage(), exchange.getResponse().getStatusCode().value());
+        
         DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(errorMessage.getBytes());
 
         return exchange.getResponse().writeWith(Mono.just(buffer));

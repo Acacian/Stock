@@ -20,6 +20,8 @@ spring:
         ssl:
           useInsecureTrustManager: true
       default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+        - AddResponseHeader=Access-Control-Allow-Origin, *
       routes:
         - id: newsfeed_service
           uri: lb://NEWSFEED-SERVICE
@@ -28,6 +30,7 @@ spring:
           filters:
             - AuthenticationFilter
             - RateLimitingFilter
+            
         - id: social_service
           uri: lb://SOCIAL-SERVICE
           predicates:
@@ -35,19 +38,22 @@ spring:
           filters:
             - AuthenticationFilter
             - RateLimitingFilter
-        - id: user_service
+
+        - id: user_service_public
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/auth/register, /api/auth/login, /api/auth/verify
+          filters:
+            - RateLimitingFilter
+
+        - id: user_service_protected
           uri: lb://USER-SERVICE
           predicates:
             - Path=/api/auth/**
           filters:
-            - RateLimitingFilter
-        - id: user_service_protected
-          uri: lb://USER-SERVICE
-          predicates:
-            - Path=/api/auth/check, /api/auth/logout, /api/auth/password, /api/auth/users/**
-          filters:
             - AuthenticationFilter
             - RateLimitingFilter
+
         - id: stock_service
           uri: lb://STOCK-SERVICE
           predicates:
@@ -75,6 +81,10 @@ management:
       enabled: true
     ratelimiters:
       enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 app:
   jwt:
@@ -93,13 +103,10 @@ resilience4j:
 
 logging:
   level:
-    root: INFO
     org.springframework.cloud.gateway: DEBUG
-    org.springframework.web.HttpLogging: DEBUG
     org.springframework.http.server.reactive: DEBUG
     org.springframework.web.reactive: DEBUG
-    reactor.netty.http.server: DEBUG
-    reactor.netty.http.client: DEBUG
-
+    reactor.netty: DEBUG
+    com.netflix.discovery: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

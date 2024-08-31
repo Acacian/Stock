@@ -57,7 +57,7 @@ spring:
       time-to-live: 3600000 # 1 hour
 
 server:
-  port: 8444
+  port: 8086
   ssl:
     key-store: classpath:keystore.p12
     key-store-password: ${SSL_KEY_STORE_PASSWORD}

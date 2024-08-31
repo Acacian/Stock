@@ -12,13 +12,13 @@
 다음은 각 서비스에서 사용되는 포트 정보입니다:
 
 - **Eureka**: `8761`
-- **MySQL**: `3307`
+- **MySQL**: `3306`
 - **Redis**: `6379`
 - **Kafka**: `9092`
 - **Zookeeper**: `2181`
-- **Jenkins**: `8080`
-- **API Gateway**: `8081` (SSL 적용)
-- **User Service**: `8444` (SSL 적용)
+- **API Gateway**: `8080` , `8081`(SSL 적용)
+- **Jenkins**: `8082`
+- **User Service**: `8086`
 - **Newsfeed Service**: `8083`
 - **Social Service**: `8084`
 - **Stock Service**: `8085`
