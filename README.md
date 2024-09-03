@@ -4,7 +4,7 @@
 - Java 17 및 Spring Boot 3.1.5를 메인으로 사용하였고 Micro Architecture를 사용하고 있으며 Kafka,Redis,Eureka,WebSocket,WebRTC 등의 최신 백엔드 기술을 활용하여 개발되었습니다.
 
 ## 🗂️ ERD
-![ERD Diagram](./public/erd.png)
+![ERD Diagram](./public/ERD.png)
 
 ## 🏛️ Architecture
 
