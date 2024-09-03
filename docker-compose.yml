@@ -67,9 +67,6 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-    depends_on:
-      zookeeper:
-        condition: service_healthy
     networks:
       - my-network
     healthcheck:
@@ -77,6 +74,18 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - my-network
 
   zookeeper:
     image: zookeeper:3.7.0
@@ -93,46 +102,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    
-  api-gateway:
-    build:
-      context: .
-      dockerfile: api_gateway/Dockerfile
-    container_name: api-gateway
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-      - "443:443"
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      - SPRING_PROFILES_ACTIVE=${MODE:-prod}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - JAVA_TOOL_OPTIONS=-Djavax.net.debug=ssl,handshake
-      - SSL_KEY_STORE_PASSWORD=${SSL_KEY_STORE_PASSWORD}
-    env_file:
-      - .env
-    networks:
-      - my-network
-    volumes:
-      - ./api_gateway/src/main/resources:/app/ssl
-    healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   eureka-server:
     build:
       context: .
-      dockerfile: api_gateway/Dockerfile
+      dockerfile: eureka_server/Dockerfile
     container_name: eureka-server
     ports:
       - "8761:8761"
@@ -143,31 +117,70 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    volumes:
+      - ./eureka_server/application.yml:/app/application.yml
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api_gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "443:443"
+      - "3001:3001"
+      - "3002:3002"
+      - "3003:3003"
+      - "3004:3004"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${MODE:-prod}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_SERVER_URL}
+      - JAVA_TOOL_OPTIONS=-Djavax.net.debug=ssl,handshake
+      - SSL_KEY_STORE_PASSWORD=${SSL_KEY_STORE_PASSWORD}
+    depends_on:
+      - eureka-server
+      - zookeeper
+      - kafka
+      - redis
+      - db
+      - user-service
+      - stock-service
+      - social-service
+      - newsfeed-service
+    env_file:
+      - .env
+    networks:
+      - my-network
+    volumes:
+      - user-uploads:/app/uploads
+      - ./api_gateway/src/main/resources:/app/ssl
+      - ./api_gateway/application.yml:/app/application.yml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   user-service:
     build:
       context: .
-      dockerfile: api_gateway/Dockerfile  # 동일한 Dockerfile 사용
+      dockerfile: user_service/Dockerfile
     container_name: user-service
     ports:
       - "8086:8086"
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
     env_file:
       - .env
     volumes:
       - user-uploads:/app/uploads/profile_images
+      - ./user_service/application.yml:/app/application.yml
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_SERVER_URL}
       - SERVER_PORT=8086
+    depends_on:
+      - eureka-server
+      - db
+      - redis
+      - kafka
     networks:
       - my-network
     healthcheck:
@@ -179,22 +192,21 @@ services:
   newsfeed-service:
     build:
       context: .
-      dockerfile: api_gateway/Dockerfile  # 동일한 Dockerfile 사용
+      dockerfile: newsfeed_service/Dockerfile
     container_name: newsfeed-service
     ports:
       - "8083:8083"
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
     env_file:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_SERVER_URL}
+    depends_on:
+      - eureka-server
+      - redis
+      - kafka
+    volumes:
+      - ./newsfeed_service/application.yml:/app/application.yml
     networks:
       - my-network
     healthcheck:
@@ -206,24 +218,21 @@ services:
   social-service:
     build:
       context: .
-      dockerfile: api_gateway/Dockerfile  # 동일한 Dockerfile 사용
+      dockerfile: social_service/Dockerfile
     container_name: social-service
     ports:
       - "8084:8084"
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     env_file:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_SERVER_URL}
+    depends_on:
+      - eureka-server
+      - db
+      - kafka
+    volumes:
+      - ./social_service/application.yml:/app/application.yml
     networks:
       - my-network
     healthcheck:
@@ -235,22 +244,21 @@ services:
   stock-service:
     build:
       context: .
-      dockerfile: api_gateway/Dockerfile  # 동일한 Dockerfile 사용
+      dockerfile: stock_service/Dockerfile
     container_name: stock-service
     ports:
       - "8085:8085"
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
     env_file:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_SERVER_URL}
+    depends_on:
+      - eureka-server
+      - db
+      - kafka
+    volumes:
+      - ./stock_service/application.yml:/app/application.yml
     networks:
       - my-network
     healthcheck:

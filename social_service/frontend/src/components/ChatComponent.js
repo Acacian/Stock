@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:8081/ws';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL;
 
 const ChatComponent = () => {
   const [stompClient, setStompClient] = useState(null);

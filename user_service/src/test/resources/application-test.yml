@@ -77,13 +77,13 @@ app:
     accessTokenExpirationInMs: 900000  # 15분
     refreshTokenExpirationInMs: 604800000  # 7일
   upload:
-    dir: ${APP_UPLOAD_DIR:/tmp/uploads}
-    url: ${APP_UPLOAD_URL:http://localhost:8080/uploads}
+    dir: ${APP_UPLOAD_DIR}
+    url: ${APP_UPLOAD_URL}
 
 eureka:
   client:
     serviceUrl:
-      defaultZone: https://eureka-server:8761/eureka/
+      defaultZone: ${EUREKA_SERVER_URL}
     fetch-registry: true
     register-with-eureka: true
   instance:

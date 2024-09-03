@@ -68,7 +68,8 @@ spring:
   batch:
     job:
       enabled: false
-    initialize-schema: always
+    jdbc:
+      initialize-schema: always
 
 server:
   port: 8085

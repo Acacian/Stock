@@ -36,25 +36,62 @@ pipeline {
             }
         }
 
+        stage('Check Service Health') {
+            steps {
+                script {
+                    def services = [
+                        [name: 'Eureka Server', port: 8761],
+                        [name: 'API Gateway', port: 8081],
+                        [name: 'User Service', port: 8086],
+                        [name: 'Newsfeed Service', port: 8083],
+                        [name: 'Social Service', port: 8084],
+                        [name: 'Stock Service', port: 8085]
+                    ]
+                    
+                    services.each { service ->
+                        try {
+                            sh "curl -f http://localhost:${service.port}/actuator/health || exit 1"
+                            echo "${service.name} is healthy"
+                        } catch (Exception e) {
+                            error "${service.name} is not healthy"
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Run Integration Tests') {
             steps {
-                // 통합 테스트 실행
-                sh 'docker-compose run --rm integration-test'
+                script {
+                    try {
+                        sh 'docker-compose run --rm integration-test'
+                        echo "Integration tests passed successfully"
+                    } catch (Exception e) {
+                        error "Integration tests failed: ${e.message}"
+                    }
+                }
             }
         }
 
         stage('Run Batch Job') {
             steps {
-                // Stock Service의 배치 작업 실행
-                sh 'docker-compose exec -T stock-service java -jar app.jar --spring.batch.job.names=updateStockPricesJob'
+                script {
+                    try {
+                        sh 'docker-compose exec -T stock-service java -jar app.jar --spring.batch.job.names=updateStockPricesJob'
+                        echo "Batch job completed successfully"
+                    } catch (Exception e) {
+                        error "Batch job failed: ${e.message}"
+                    }
+                }
             }
         }
     }
 
     post {
         always {
-            // 모든 작업이 끝나면 서비스 중지 및 리소스 정리
+            echo "Stopping services and cleaning up resources..."
             sh 'docker-compose down'
+            echo "Cleanup completed"
         }
     }
 }

@@ -6,7 +6,7 @@ spring:
   application:
     name: USER-SERVICE
   datasource:
-    url: jdbc:mysql://${SERVERS:db}:3306/Stock?useSSL=true&serverTimezone=UTC
+    url: jdbc:mysql://${SERVERS:db}:3306/Stock
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${DB_PASSWORD}
   jpa:
@@ -72,8 +72,8 @@ app:
     accessTokenExpirationInMs: 900000  # 15분
     refreshTokenExpirationInMs: 604800000  # 7일
   upload:
-    dir: ${APP_UPLOAD_DIR:/tmp/uploads}
-    url: ${APP_UPLOAD_URL:http://localhost:8081/uploads}
+    dir: ${APP_UPLOAD_DIR}
+    url: ${APP_UPLOAD_URL}
 
 eureka:
   client:
@@ -83,7 +83,6 @@ eureka:
     register-with-eureka: true
   instance:
     preferIpAddress: true
-    nonSecurePortEnabled: true
 
 feign:
   client:
