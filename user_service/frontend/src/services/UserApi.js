@@ -46,8 +46,10 @@ const handleApiError = (error) => {
 export const registerUser = async (userData) => {
   try {
     const response = await axiosInstance.post('/register', userData);
+    console.log('Request URL:', axiosInstance.getUri() + '/register');
     return response.data;
   } catch (error) {
+    console.error('Registration error:', error);
     handleApiError(error);
   }
 };

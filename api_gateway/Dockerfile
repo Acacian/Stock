@@ -39,7 +39,9 @@ RUN npm install && \
 FROM node:18 AS newsfeed-frontend-build
 WORKDIR /app/newsfeed_service/frontend
 COPY newsfeed_service/frontend .
-RUN npm install && npm run build
+RUN npm install && \
+    npm install sockjs-client @stomp/stompjs \
+    npm run build
 
 # 실행 단계
 FROM openjdk:17-jdk-slim

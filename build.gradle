@@ -80,6 +80,13 @@ subprojects {
         }
     }
 
+    // newsfeed Service에만 적용되는 의존성
+    if (project.name == 'newsfeed_service') {
+        dependencies {
+            implementation 'org.springframework.boot:spring-boot-starter-websocket'
+        }
+    }
+
     // Eureka Server에만 적용되는 의존성
     if (project.name == 'eureka_server') {
         dependencies {

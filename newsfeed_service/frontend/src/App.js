@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Newsfeed from './components/Newsfeed';
+import NotificationComponent from './components/NotificationComponent';
 import './App.css';
 
 function App() {
@@ -9,6 +10,7 @@ function App() {
     const handleMessage = (event) => {
       if (event.origin === 'https://localhost:3001' && event.data.type === 'USER_LOGGED_IN') {
         setUser(event.data.user);
+        localStorage.setItem('user', JSON.stringify(event.data.user));
       }
     };
 
@@ -26,7 +28,14 @@ function App() {
   return (
     <div className="App">
       <h2>Newsfeed</h2>
-      {user ? <Newsfeed userId={user.id} /> : <p>Please log in to view your newsfeed.</p>}
+      {user ? (
+        <>
+          <NotificationComponent currentUserId={user.id} />
+          <Newsfeed userId={user.id} />
+        </>
+      ) : (
+        <p>Please log in to view your newsfeed.</p>
+      )}
     </div>
   );
 }

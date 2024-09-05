@@ -2,6 +2,7 @@ package stock.newsfeed_service.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import stock.newsfeed_service.model.NewsfeedItem;
@@ -24,6 +25,9 @@ public class NewsfeedService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     public void addFollowActivity(Long userId, Long targetUserId) {
         String userName = userRepository.getUserName(userId);
@@ -68,6 +72,9 @@ public class NewsfeedService {
         String key = "newsfeed:" + userId;
         redisTemplate.opsForList().leftPush(key, serializeNewsfeedItem(item));
         redisTemplate.opsForList().trim(key, 0, 99);
+        
+        // Send real-time notification
+        messagingTemplate.convertAndSend("/topic/newsfeed/" + userId, item);
     }
 
     private void addActivityToFollowers(Long userId, NewsfeedItem item) {
