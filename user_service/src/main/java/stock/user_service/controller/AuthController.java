@@ -11,6 +11,11 @@ import stock.user_service.dto.JwtAuthenticationResponse;
 import stock.user_service.dto.UpdatePasswordRequest;
 import stock.user_service.exception.GlobalExceptionHandler.EmailAlreadyExistsException;
 import stock.user_service.exception.GlobalExceptionHandler.InvalidTokenException;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
@@ -39,15 +44,28 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/login")
+    public ResponseEntity<?> loginInfo() {
+        Map<String, Object> loginInfo = new HashMap<>();
+        loginInfo.put("loginEndpoint", "/api/auth/login");
+        loginInfo.put("method", "POST");
+        loginInfo.put("requiredFields", Arrays.asList("email", "password"));
+        return ResponseEntity.ok(loginInfo);
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         try {
             JwtAuthenticationResponse jwt = authService.authenticateUser(loginRequest.getEmail(), loginRequest.getPassword());
             return ResponseEntity.ok(jwt);
         } catch (UsernameNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("사용자를 찾을 수 없습니다.");
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("이메일 또는 비밀번호가 올바르지 않습니다.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("로그인 중 오류가 발생했습니다.");
         }
     }
 
@@ -65,8 +83,17 @@ public class AuthController {
 
     @GetMapping("/verify")
     public ResponseEntity<?> verifyUser(@RequestParam String token) {
-        authService.verifyUser(token);
-        return ResponseEntity.ok("Email verified successfully");
+        logger.info("Received verification request with token: {}", token);
+        try {
+            authService.verifyUser(token);
+            return ResponseEntity.ok("Email verified successfully");
+        } catch (InvalidTokenException e) {
+            logger.error("Invalid token: {}", token, e);
+            return ResponseEntity.badRequest().body("Invalid or expired token");
+        } catch (Exception e) {
+            logger.error("Error during email verification", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred during verification");
+        }
     }
 
     @GetMapping("/check")

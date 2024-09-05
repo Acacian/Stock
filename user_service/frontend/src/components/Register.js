@@ -25,14 +25,11 @@ const Register = () => {
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
-      if (error.response) {
-        // 서버에서 응답을 받은 경우
+      if (error.response && error.response.data) {
         setError(error.response.data.message || '회원가입에 실패했습니다. 다시 시도해 주세요.');
-      } else if (error.request) {
-        // 요청이 전송되었지만 응답을 받지 못한 경우
-        setError('서버에 연결할 수 없습니다. 네트워크 연결을 확인해 주세요.');
+      } else if (error.message.includes('Duplicate entry')) {
+        setError('이미 등록된 이메일 주소입니다. 다른 이메일을 사용해 주세요.');
       } else {
-        // 요청 설정 중 오류가 발생한 경우
         setError('예기치 않은 오류가 발생했습니다. 다시 시도해 주세요.');
       }
     }

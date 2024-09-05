@@ -46,6 +46,9 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y nginx openssl curl
 
+# nginx 사용자와 그룹 생성
+RUN groupadd -r nginx && useradd -r -g nginx nginx
+
 COPY --from=backend-build /app/api_gateway/build/libs/*.jar /app/api_gateway.jar
 COPY api_gateway/nginx.conf /etc/nginx/nginx.conf
 COPY api_gateway/src/main/resources/application.yml /app/api_gateway_application.yml

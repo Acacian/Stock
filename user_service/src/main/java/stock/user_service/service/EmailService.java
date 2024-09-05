@@ -32,7 +32,7 @@ public class EmailService {
             helper.setTo(to);
             helper.setSubject("Verify your email");
             
-            String verificationUrl = "http://" + appDomain + "/api/auth/verify?token=" + token;
+            String verificationUrl = "https://" + appDomain + ":3001/api/auth/verify?token=" + token;
             String htmlContent = String.format(
                 "<html><body><p>Please click <a href='%s'>here</a> to verify your email.</p></body></html>",
                 verificationUrl

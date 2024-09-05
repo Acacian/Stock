@@ -3,11 +3,20 @@
 - 이 프로젝트는 24.08.07 ~ 24.09.04간 진행된 개인 백엔드 프로젝트로, 주식 토론 게시판을 구현한 것입니다. 프론트엔드 역시 혼자서 구현했습니다.
 - Java 17 및 Spring Boot 3.1.5를 메인으로 사용하였고 Micro Architecture를 사용하고 있으며 Kafka,Redis,Eureka,WebSocket,WebRTC 등의 최신 백엔드 기술을 활용하여 개발되었습니다.
 
-## 🗂️ ERD
-![ERD Diagram](./public/ERD.png)
+## 🎥 데모 영상 (Demo Video)
+
+- 추후 첨부 예정
 
 ## 🏛️ Architecture
 
+![Architecture](./public/Architecture.png)
+
+## 🗂️ ERD
+
+![ERD Diagram](./public/ERD.png)
+
+- 대규모 데이터 처리에서 작업의 안정성을 보장하고 관리하기 위해 Spring Batch를 사용했습니다.
+- likes, follows, stock prices 등에 복합 키를 사용하여 데이터 중복을 방지하고 메모리 공간을 절약하였습니다.
 
 ## 💻 사용된 프레임워크 및 아키텍처
 
@@ -23,6 +32,3 @@
   > Redis를 사용한 블랙리스트 방식으로 개선하여 토큰 관리 효율성과 보안을 강화
 
 
-## 📊 ERD
-
-따로 첨부 예정

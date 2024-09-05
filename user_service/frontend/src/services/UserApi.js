@@ -1,12 +1,14 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_GATEWAY_URL || process.env.REACT_APP_AUTH_URL || 'https://localhost/api/auth';
+const API_URL = process.env.REACT_APP_AUTH_URL;
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
+  timeout: 10000,
 });
 
 axiosInstance.interceptors.request.use((config) => {
@@ -58,7 +60,8 @@ export const loginUser = async (email, password) => {
     }
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    console.error('Login error:', error);
+    throw error;
   }
 };
 

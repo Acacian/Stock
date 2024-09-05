@@ -131,7 +131,7 @@ public class AuthService {
     public JwtAuthenticationResponse authenticateUser(String email, String password) {
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, password)
+                new UsernamePasswordAuthenticationToken(email, password)
             );
     
             String accessToken = tokenProvider.generateAccessToken(authentication);
@@ -140,6 +140,9 @@ public class AuthService {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             User user = userRepository.findByEmail(userPrincipal.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                if (!user.isEnabled()) {
+                    throw new RuntimeException("이메일 인증이 완료되지 않았습니다.");
+                }
             
             saveRefreshToken(user.getEmail(), refreshToken);
             newsfeedServiceClient.userAuthenticated(new AuthEvent("USER_AUTHENTICATED", user.getId()));
@@ -147,7 +150,13 @@ public class AuthService {
             return new JwtAuthenticationResponse(accessToken, refreshToken);
         } catch (BadCredentialsException e) {
             logger.error("Authentication failed for user: {}", email, e);
-            throw e;
+            throw new BadCredentialsException("Invalid email or password");
+        } catch (UsernameNotFoundException e) {
+            logger.error("User not found: {}", email, e);
+            throw new UsernameNotFoundException("User not found");
+        } catch (Exception e) {
+            logger.error("Unexpected error during authentication: {}", email, e);
+            throw new RuntimeException("An unexpected error occurred during authentication");
         }
     }
 

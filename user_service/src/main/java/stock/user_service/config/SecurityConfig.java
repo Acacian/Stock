@@ -13,15 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import stock.user_service.security.JwtAuthenticationEntryPoint;
 import stock.user_service.security.JwtAuthenticationFilter;
 import stock.user_service.service.CustomUserDetailsService;
 import org.springframework.http.HttpMethod;
 
-import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
