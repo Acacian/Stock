@@ -11,34 +11,13 @@
 
 ## 🛠️ 주요 기능
 
-### Api Gateway
-- 🔄 Load Balancing
-- 🔀 Routing
-- 🔒 SSL
-- 🌐 CORS
-
-### User Service
-- 👤 회원 가입
-- 🔐 로그인 (JWT 인증)
-- 🚪 로그아웃
-- 👥 사용자 프로필 관리
-
-### Stock Service
-- 📊 주식 정보 조회 및 관리
-- 📈 주식 차트 데이터 제공
-- 📉 기술적 지표 제공(MACD, MA 등..)
-
-### Social Service
-- 📝 게시글 작성, 수정, 삭제
-- 💬 댓글 기능
-- 👍 좋아요 기능
-- 👥 팔로우 기능
-- 🔍 게시글 검색
-- 📡 WebSocket을 이용한 실시간 채팅
-- 🎥 WebRTC를 이용한 화상 통화
-
-### Newsfeed Service
-- 📢 팔로어 좋아요, 게시글 작성 등 커뮤니티 활동 시 알람
+| **Service**         | **Features**                                                                                                 |
+|---------------------|-------------------------------------------------------------------------------------------------------------|
+| Api Gateway         | Load Balancing, Routing, SSL, CORS                                                                |
+| User Service        | 회원 가입, 로그인 (JWT 인증), 로그아웃, 사용자 프로필 관리                                          |
+| Stock Service       | 주식 정보 조회 및 관리, 주식 차트 데이터 제공, 기술적 지표 제공(MACD, MA 등..)                      |
+| Social Service      | 게시글 작성, 수정, 삭제, 댓글 기능, 좋아요 기능, 팔로우 기능, 게시글 검색, 실시간 채팅(WebSocket), 화상 통화(WebRTC) |
+| Newsfeed Service    | 팔로어 좋아요, 게시글 작성 등 커뮤니티 활동 시 알람                                                       |
 
 ## 💻 사용된 프레임워크 및 아키텍처
 
