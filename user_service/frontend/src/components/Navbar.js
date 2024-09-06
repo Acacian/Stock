@@ -1,15 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log('Current user state in Navbar:', user); // 디버깅용
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
+
+  if (loading) {
+    return <nav>Loading...</nav>;
+  }
 
   return (
     <nav>

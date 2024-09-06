@@ -4,13 +4,18 @@ import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import jakarta.annotation.PostConstruct;
 
-public class RateLimitingFilter extends AbstractGatewayFilterFactory<RateLimitingFilter.Config> {
+@Component
+public class RateLimitingFilter implements GatewayFilter, Ordered {
 
     private RateLimiter rateLimiter;
 
@@ -22,10 +27,6 @@ public class RateLimitingFilter extends AbstractGatewayFilterFactory<RateLimitin
 
     @Value("${resilience4j.ratelimiter.instances.default.timeoutDuration:PT5S}")
     private String timeoutDuration;
-
-    public RateLimitingFilter() {
-        super(Config.class);
-    }
 
     @PostConstruct
     public void init() {
@@ -42,18 +43,17 @@ public class RateLimitingFilter extends AbstractGatewayFilterFactory<RateLimitin
     }
 
     @Override
-    public GatewayFilter apply(Config config) {
-        return (exchange, chain) -> {
-            boolean permitAcquired = rateLimiter.acquirePermission();
-            if (!permitAcquired) {
-                exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-                return exchange.getResponse().setComplete();
-            }
-            return chain.filter(exchange);
-        };
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        boolean permitAcquired = rateLimiter.acquirePermission();
+        if (!permitAcquired) {
+            exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+            return exchange.getResponse().setComplete();
+        }
+        return chain.filter(exchange);
     }
 
-    public static class Config {
-        // Configuration properties can be added here if needed in the future
+    @Override
+    public int getOrder() {
+        return Ordered.HIGHEST_PRECEDENCE;
     }
 }

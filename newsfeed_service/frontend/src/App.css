@@ -1,56 +1,76 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Roboto', sans-serif;
   background-color: #f0f2f5;
 }
 
 .App {
-  max-width: 300px;
+  max-width: 350px;
   margin: 0 auto;
-  padding: 10px;
+  padding: 15px;
   position: fixed;
-  right: 20px;
-  top: 20px;
+  right: 30px;
+  top: 30px;
   background-color: white;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.App:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 7px 14px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.08);
 }
 
 .newsfeed {
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
+  padding-right: 10px;
+}
+
+.newsfeed::-webkit-scrollbar {
+  width: 8px;
+}
+
+.newsfeed::-webkit-scrollbar-thumb {
+  background-color: #bbb;
+  border-radius: 4px;
 }
 
 .newsfeed-item {
   background-color: #f8f9fa;
-  border-left: 4px solid #007bff;
-  padding: 10px;
-  margin-bottom: 10px;
+  border-left: 4px solid #4267B2;
+  padding: 12px;
+  margin-bottom: 15px;
   font-size: 14px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.newsfeed-item:hover {
+  transform: translateX(5px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .newsfeed-item small {
-  color: #6c757d;
+  color: #65676B;
   display: block;
-  margin-top: 5px;
+  margin-top: 8px;
   font-size: 12px;
 }
 
 button {
-  background-color: #007bff;
+  background-color: #4267B2;
   color: white;
   border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
-  margin-right: 5px;
+  font-size: 13px;
+  margin-right: 8px;
+  transition: background-color 0.3s ease;
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #365899;
 }

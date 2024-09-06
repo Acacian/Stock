@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getUserProfile, updateUserProfile } from '../services/UserApi';
+import { getUserProfile, updateUserProfile, uploadProfileImage } from '../services/UserApi';
 import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
@@ -45,18 +45,22 @@ const Profile = () => {
     setUpdateSuccess(false);
   
     try {
-      const formData = new FormData();
-      formData.append('name', profile.name);
-      formData.append('introduction', profile.introduction);
+      let updatedProfile = await updateUserProfile(user.id, {
+        name: profile.name,
+        introduction: profile.introduction
+      });
+
       if (imageFile) {
+        const formData = new FormData();
         formData.append('file', imageFile);
+        formData.append('userId', user.id);
+        const imageResponse = await uploadProfileImage(formData);
+        updatedProfile = { ...updatedProfile, profileImage: imageResponse.fileUrl };
       }
-  
-      const response = await updateUserProfile(user.id, formData);
-      if (response.fileUrl) {
-        setProfile(prev => ({ ...prev, profileImage: response.fileUrl }));
-      }
+
+      setProfile(updatedProfile);
       setUpdateSuccess(true);
+      setImageFile(null); // Reset the image file after successful upload
     } catch (error) {
       setError('Failed to update profile. Please try again.');
     }
@@ -123,9 +127,13 @@ const Profile = () => {
             accept="image/*"
           />
         </div>
-        {profile.profileImage && (
+        {profile.profileImage ? (
           <div className="form-group">
             <img src={profile.profileImage} alt="Profile" className="profile-image" />
+          </div>
+        ) : (
+          <div className="form-group">
+            <img src="/default-profile.png" alt="Default Profile" className="profile-image" />
           </div>
         )}
         <button type="submit">Update Profile</button>

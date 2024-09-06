@@ -20,19 +20,14 @@ const Login = () => {
     try {
       const success = await login(credentials.email, credentials.password);
       if (success) {
+        console.log('Login successful, redirecting...');
         navigate('/profile');
       } else {
         setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.');
       }
     } catch (error) {
       console.error('Login error:', error);
-      if (error.response) {
-        setError(error.response.data || '로그인 중 오류가 발생했습니다.');
-      } else if (error.request) {
-        setError('서버로부터 응답을 받지 못했습니다. 나중에 다시 시도해 주세요.');
-      } else {
-        setError('예기치 않은 오류가 발생했습니다. 다시 시도해 주세요.');
-      }
+      setError('로그인 중 오류가 발생했습니다. 다시 시도해 주세요.');
     } finally {
       setLoading(false);
     }

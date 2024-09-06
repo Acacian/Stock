@@ -1,42 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Newsfeed from './components/Newsfeed';
 import NotificationComponent from './components/NotificationComponent';
 import './App.css';
 
-function App() {
-  const [user, setUser] = useState(null);
+function AppContent() {
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.origin === 'https://localhost:3001' && event.data.type === 'USER_LOGGED_IN') {
-        setUser(event.data.user);
-        localStorage.setItem('user', JSON.stringify(event.data.user));
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, []);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="App">
-      <h2>Newsfeed</h2>
-      {user ? (
-        <>
-          <NotificationComponent currentUserId={user.id} />
-          <Newsfeed userId={user.id} />
-        </>
-      ) : (
-        <p>Please log in to view your newsfeed.</p>
-      )}
-    </div>
+    <Router>
+      <div className="App">
+        <h2>Newsfeed</h2>
+        <Routes>
+          <Route path="/" element={
+            user ? (
+              <>
+                <NotificationComponent currentUserId={user.id} />
+                <Newsfeed userId={user.id} />
+              </>
+            ) : <Navigate to="https://localhost:3001/login" />
+          } />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

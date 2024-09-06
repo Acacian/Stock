@@ -1,12 +1,11 @@
-const API_URL = process.env.REACT_APP_NEWSFEED_API_URL || '/api/newsfeed';
+import { API_URL } from '../config';
 
-const handleResponse = async (response) => {
+export const fetchNewsfeed = async (userId) => {
+  const response = await fetch(`${API_URL}/newsfeed/${userId}`, {
+    credentials: 'include',
+  });
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'An error occurred');
+    throw new Error('Failed to fetch newsfeed');
   }
   return response.json();
 };
-
-export const fetchNewsfeed = (userId) =>
-  fetch(`${API_URL}/${userId}`).then(handleResponse);

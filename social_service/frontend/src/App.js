@@ -1,38 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import MainPage from './components/MainPage';
 import './App.css';
 
-function App() {
-  const [user, setUser] = useState(null);
+function AppContent() {
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.origin === 'https://localhost:3001') {
-        if (event.data.type === 'USER_LOGGED_IN') {
-          setUser(event.data.user);
-        } else if (event.data.type === 'USER_LOGGED_OUT') {
-          setUser(null);
-        }
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, []);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="App">
-      <h1>Social Platform</h1>
-      {user ? <MainPage user={user} /> : <p>Please log in to use the platform.</p>}
-    </div>
+    <Router>
+      <div className="App">
+        <h1>Social Platform</h1>
+        <Routes>
+          <Route path="/" element={
+            user ? <MainPage user={user} />
+            : <Navigate to="https://localhost:3001/login" />
+          } />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

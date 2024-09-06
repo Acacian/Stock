@@ -1,7 +1,13 @@
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: #f0f2f5;
+}
+
 .App {
-  max-width: 1200px; /* Increase width to accommodate all sections */
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -9,25 +15,66 @@
 
 .main-page {
   display: flex;
-  flex-direction: row;
+  flex-wrap: wrap;
   width: 100%;
-  gap: 20px;
+  gap: 30px;
 }
 
 .chat-section, .video-section, .post-section {
-  background-color: #f0f2f5;
-  border-radius: 8px;
-  padding: 15px;
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+.chat-section:hover, .video-section:hover, .post-section:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 7px 14px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.08);
 }
 
 .chat-section, .post-section {
   flex: 1;
+  min-width: 300px;
   max-height: 80vh;
   overflow-y: auto;
 }
 
 .video-section {
-  flex: 2; /* Larger area for video */
+  flex: 2;
+  min-width: 600px;
   max-height: 80vh;
   overflow-y: auto;
+}
+
+.post {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  transition: all 0.2s ease;
+}
+
+.post:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+h1, h2, h3 {
+  color: #4267B2;
+}
+
+button {
+  background-color: #4267B2;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #365899;
 }

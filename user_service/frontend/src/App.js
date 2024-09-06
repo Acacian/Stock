@@ -9,25 +9,40 @@ import Navbar from './components/Navbar';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <div>Loading...</div>;
+  }
   return user ? children : <Navigate to="/login" />;
 };
+
+function AppContent() {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Router>
+      <div className="App">
+        <Navbar />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="App">
-          <Navbar />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </div>
-      </Router>
+      <AppContent />
     </AuthProvider>
   );
 }

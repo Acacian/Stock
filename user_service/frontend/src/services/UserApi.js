@@ -111,3 +111,25 @@ export const checkAuthStatus = async () => {
     handleApiError(error);
   }
 };
+
+export const uploadProfileImage = async (formData) => {
+  try {
+    const response = await axiosInstance.post('/profile/uploadImage', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const refreshTokenApi = async (refreshToken) => {
+  try {
+    const response = await axiosInstance.post('/refresh-token', { refreshToken });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
