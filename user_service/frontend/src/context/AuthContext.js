@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { loginUser, logoutUser, refreshTokenApi } from '../services/UserApi';
 
 const AuthContext = createContext(null);
@@ -7,30 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const initializeAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        try {
-          const decodedUser = decodeJWT(token);
-          if (decodedUser) {
-            setUser(decodedUser);
-          } else {
-            await refreshUserToken();
-          }
-        } catch (error) {
-          console.error('Error initializing auth:', error);
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-        }
-      }
-      setLoading(false);
-    };
-
-    initializeAuth();
-  }, []);
-
-  const refreshUserToken = async () => {
+  const refreshUserToken = useCallback(async () => {
     const refreshToken = localStorage.getItem('refreshToken');
     if (refreshToken) {
       try {
@@ -40,18 +17,42 @@ export const AuthProvider = ({ children }) => {
         setUser(decodeJWT(response.accessToken));
       } catch (error) {
         console.error('Failed to refresh token:', error);
-        logout();
+        await logout();
       }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        try {
+          const decodedUser = decodeJWT(token);
+          if (decodedUser && decodedUser.exp * 1000 > Date.now()) {
+            setUser(decodedUser);
+          } else {
+            await refreshUserToken();
+          }
+        } catch (error) {
+          console.error('Error initializing auth:', error);
+          await logout();
+        }
+      }
+      setLoading(false);
+    };
+
+    initializeAuth();
+  }, [refreshUserToken]);
 
   useEffect(() => {
     const tokenRefreshInterval = setInterval(() => {
-      refreshUserToken();
+      if (user) {
+        refreshUserToken();
+      }
     }, 14 * 60 * 1000); // 14분마다 토큰 갱신
 
     return () => clearInterval(tokenRefreshInterval);
-  }, []);
+  }, [refreshUserToken, user]);
 
   const login = async (email, password) => {
     try {
@@ -70,16 +71,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await logoutUser();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       setUser(null);
-    } catch (error) {
-      console.error('Logout failed:', error);
     }
-  };
+  }, []);
 
   const decodeJWT = (token) => {
     try {
@@ -96,7 +98,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, refreshUserToken }}>
       {children}
     </AuthContext.Provider>
   );
