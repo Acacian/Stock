@@ -44,8 +44,10 @@ public class RateLimitingFilter implements GatewayFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        System.out.println("RateLimitingFilter processing request: " + exchange.getRequest().getPath());
         boolean permitAcquired = rateLimiter.acquirePermission();
         if (!permitAcquired) {
+            System.out.println("Rate limit exceeded for: " + exchange.getRequest().getPath());
             exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
             return exchange.getResponse().setComplete();
         }

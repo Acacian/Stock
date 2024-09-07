@@ -40,7 +40,12 @@ public class GatewayConfig {
                                .filter(rateLimitingFilter))
                 .uri("http://social-service:8084"))
             .route("user_service_public", r -> r.path("/api/auth/register", "/api/auth/login", "/api/auth/verify")
-                .filters(f -> f.filter(rateLimitingFilter))
+            .filters(f -> f
+                .filter((exchange, chain) -> {
+                    System.out.println("Request received at user_service_public route: " + exchange.getRequest().getPath());
+                    return chain.filter(exchange);
+                })
+                .filter(rateLimitingFilter))
                 .uri("http://user-service:8086"))
             .route("user_service_check", r -> r.path("/api/auth/check")
                 .filters(f -> f.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
@@ -60,6 +65,10 @@ public class GatewayConfig {
     @Bean
     public WebExceptionHandler errorWebExceptionHandler() {
         return (ServerWebExchange exchange, Throwable ex) -> {
+
+            System.out.println("Exception occurred: " + ex.getMessage());
+            ex.printStackTrace();
+            
             if (exchange.getResponse().isCommitted()) {
                 return Mono.error(ex);
             }

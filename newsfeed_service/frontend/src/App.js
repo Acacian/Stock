@@ -21,7 +21,7 @@ function AppContent() {
             user ? (
               <>
                 <NotificationComponent currentUserId={user.id} />
-                <Newsfeed userId={user.id} />
+                <Newsfeed />
               </>
             ) : <Navigate to="https://localhost:3001/login" />
           } />

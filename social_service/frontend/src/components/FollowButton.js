@@ -1,31 +1,42 @@
 import React, { useState } from 'react';
-import { follow, unfollow } from '../services/SocialApi';
+import { useAuth } from '../context/AuthContext';
 
-const FollowButton = ({ currentUserId, targetUserId, initialIsFollowing }) => {
-  const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
-  const [loading, setLoading] = useState(false);
+const SearchComponent = () => {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const { socialActions } = useAuth();
 
-  const handleToggleFollow = async () => {
+  const handleSearch = async (e) => {
+    e.preventDefault();
     try {
-      setLoading(true);
-      if (isFollowing) {
-        await unfollow(currentUserId, targetUserId);
-      } else {
-        await follow(currentUserId, targetUserId);
-      }
-      setIsFollowing(!isFollowing);
+      const searchResults = await socialActions.searchPosts(query);
+      setResults(searchResults.content);
     } catch (error) {
-      console.error('Failed to toggle follow:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error searching posts:', error);
     }
   };
 
   return (
-    <button onClick={handleToggleFollow} disabled={loading}>
-      {isFollowing ? 'Unfollow' : 'Follow'}
-    </button>
+    <div>
+      <form onSubmit={handleSearch}>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search posts..."
+        />
+        <button type="submit">Search</button>
+      </form>
+      <div>
+        {results.map(post => (
+          <div key={post.id}>
+            <h3>{post.title}</h3>
+            <p>{post.content}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 
-export default FollowButton;
+export default SearchComponent;

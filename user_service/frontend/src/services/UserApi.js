@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_AUTH_URL;
+const API_URL = process.env.REACT_APP_AUTH_URL || 'https://localhost/api/auth';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
@@ -12,9 +12,12 @@ const axiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // 회원가입과 로그인 요청에는 토큰을 추가하지 않음
+  if (!['/register', '/login'].includes(config.url)) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
@@ -22,7 +25,7 @@ axiosInstance.interceptors.request.use((config) => {
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       localStorage.removeItem('token');
       window.location.reload(true);
     }
@@ -32,13 +35,10 @@ axiosInstance.interceptors.response.use(
 
 const handleApiError = (error) => {
   if (error.response) {
-    // 서버에서 응답을 받은 경우
     throw new Error(error.response.data.message || '서버 오류가 발생했습니다.');
   } else if (error.request) {
-    // 요청이 전송되었지만 응답을 받지 못한 경우
     throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해 주세요.');
   } else {
-    // 요청 설정 중 오류가 발생한 경우
     throw new Error('예기치 않은 오류가 발생했습니다.');
   }
 };
@@ -63,7 +63,7 @@ export const loginUser = async (email, password) => {
     return response.data;
   } catch (error) {
     console.error('Login error:', error);
-    throw error;
+    handleApiError(error);
   }
 };
 
@@ -133,3 +133,17 @@ export const refreshTokenApi = async (refreshToken) => {
     handleApiError(error);
   }
 };
+
+const UserApi = {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getUserProfile,
+  updateUserProfile,
+  updatePassword,
+  checkAuthStatus,
+  uploadProfileImage,
+  refreshTokenApi,
+};
+
+export default UserApi;

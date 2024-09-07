@@ -22,7 +22,7 @@ WORKDIR /app/stock_service/frontend
 COPY stock_service/frontend .
 RUN npm install && \
     npm install --save axios @mui/material @mui/icons-material @emotion/react @emotion/styled \
-                 react-router-dom react-error-boundary@latest recharts lodash && \
+                 react-router-dom react-error-boundary@latest recharts lodash @stomp/stompjs && \
     npm install --save-dev @babel/plugin-proposal-private-property-in-object && \
     npm run build
 
@@ -31,8 +31,9 @@ FROM node:18 AS social-frontend-build
 WORKDIR /app/social_service/frontend
 COPY social_service/frontend .
 RUN npm install && \
+    npm install --save axios @mui/material @mui/icons-material @emotion/react @emotion/styled \
+                 react-router-dom react-error-boundary@latest recharts lodash @stomp/stompjs && \
     npm install --save-dev @babel/plugin-proposal-private-property-in-object && \
-    npm install @stomp/stompjs && \
     npm run build
 
 # Newsfeed Service Frontend 빌드 단계

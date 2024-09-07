@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { searchPosts } from '../services/SocialApi';
+import { useAuth } from '../context/AuthContext';
 
 const SearchComponent = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const { socialActions } = useAuth();
 
   const handleSearch = async (e) => {
     e.preventDefault();
     try {
-      const searchResults = await searchPosts(query);
-      setResults(searchResults.content); // 페이지 객체에서 content를 가져옵니다.
+      const searchResults = await socialActions.searchPosts(query);
+      setResults(searchResults.content);
     } catch (error) {
-      console.error('게시물 검색 중 오류 발생:', error);
+      console.error('Error searching posts:', error);
     }
   };
 
@@ -22,9 +23,9 @@ const SearchComponent = () => {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="게시물 검색..."
+          placeholder="Search posts..."
         />
-        <button type="submit">검색</button>
+        <button type="submit">Search</button>
       </form>
       <div>
         {results.map(post => (

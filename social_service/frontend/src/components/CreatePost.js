@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { createPost } from '../services/SocialApi';
+import { useAuth } from '../context/AuthContext';
 
-const CreatePost = ({ userId, onPostCreated }) => {
+const CreatePost = ({ onPostCreated }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const { socialActions } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await createPost(userId, title, content);
+      await socialActions.createPost(title, content);
       setTitle('');
       setContent('');
       onPostCreated();

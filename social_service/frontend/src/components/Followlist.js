@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getFollowers, getFollowing } from '../services/SocialApi';
+import { useAuth } from '../context/AuthContext';
 import FollowButton from './FollowButton';
 
-const FollowList = ({ userId, type, currentUserId }) => {
+const FollowList = ({ type }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user, socialActions } = useAuth();
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
         const data = type === 'followers' 
-          ? await getFollowers(userId)
-          : await getFollowing(userId);
+          ? await socialActions.getFollowers()
+          : await socialActions.getFollowing();
         setUsers(data);
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -24,7 +25,7 @@ const FollowList = ({ userId, type, currentUserId }) => {
       }
     };
     fetchUsers();
-  }, [userId, type]);
+  }, [type, socialActions]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
@@ -33,14 +34,13 @@ const FollowList = ({ userId, type, currentUserId }) => {
     <div className="follow-list">
       <h2>{type === 'followers' ? 'Followers' : 'Following'}</h2>
       <ul>
-        {users.map(user => (
-          <li key={user.id}>
-            <Link to={`/profile/${user.id}`}>{user.name}</Link>
-            {currentUserId !== user.id && (
+        {users.map(otherUser => (
+          <li key={otherUser.id}>
+            <Link to={`/profile/${otherUser.id}`}>{otherUser.name}</Link>
+            {user.id !== otherUser.id && (
               <FollowButton 
-                currentUserId={currentUserId} 
-                targetUserId={user.id}
-                initialIsFollowing={user.isFollowing}
+                targetUserId={otherUser.id}
+                initialIsFollowing={otherUser.isFollowing}
               />
             )}
           </li>

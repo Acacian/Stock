@@ -1,75 +1,164 @@
-const API_URL = process.env.REACT_APP_SOCIAL_API_URL || 'https://localhost:8081/api/social';
+import axios from 'axios';
 
-const handleResponse = async (response) => {
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'An error occurred');
+const API_URL = process.env.REACT_APP_SOCIAL_API_URL || 'https://localhost:8081/api/social';
+const AUTH_URL = process.env.REACT_APP_AUTH_URL || '/api/auth';
+
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true,
+});
+
+const refreshTokenRequest = async () => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    throw new Error('No refresh token available');
   }
-  return response.json();
+  try {
+    const response = await axios.post(`${AUTH_URL}/refresh-token`, { refreshToken });
+    const { token } = response.data;
+    localStorage.setItem('token', token);
+    return token;
+  } catch (error) {
+    console.error('Failed to refresh token:', error);
+    throw error;
+  }
 };
 
-export const createPost = (userId, title, content) =>
-  fetch(`${API_URL}/posts`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, title, content }),
-    credentials: 'include',
-  }).then(handleResponse);
+const logout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  window.location.href = '/login';
+};
 
-export const addComment = (userId, postId, content) =>
-  fetch(`${API_URL}/posts/${postId}/comments`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, content }),
-    credentials: 'include',
-  }).then(handleResponse);
-
-export const likePost = (userId, postId) =>
-  fetch(`${API_URL}/posts/${postId}/likes?userId=${userId}`, { 
-    method: 'POST',
-    credentials: 'include',
-  }).then(handleResponse);
-
-export const follow = (followerId, followedId) =>
-  fetch(`${API_URL}/follow?followerId=${followerId}&followedId=${followedId}`, { 
-    method: 'POST',
-    credentials: 'include',
-  }).then(handleResponse);
-
-export const unfollow = (followerId, followedId) =>
-  fetch(`${API_URL}/unfollow?followerId=${followerId}&followedId=${followedId}`, { 
-    method: 'POST',
-    credentials: 'include',
-  }).then(handleResponse);
-
-export const getPostsByUserId = (userId) =>
-  fetch(`${API_URL}/posts/user/${userId}`, {
-    credentials: 'include',
-  }).then(handleResponse);
-
-export const getPostsWithActivity = (userId) =>
-  fetch(`${API_URL}/posts/${userId}/with-activity`, {
-    credentials: 'include',
-  }).then(handleResponse);
-
-export const getFollowers = (userId) =>
-  fetch(`${API_URL}/followers/${userId}`, {
-    credentials: 'include',
-  }).then(handleResponse);
-
-export const getFollowing = (userId) =>
-  fetch(`${API_URL}/following/${userId}`, {
-    credentials: 'include',
-  }).then(handleResponse);
-
-export const searchPosts = (query, stockId, page = 0, size = 10, sortBy = 'createdAt', sortDirection = 'desc') => {
-  let url = `${API_URL}/posts/search?query=${encodeURIComponent(query)}&page=${page}&size=${size}&sortBy=${sortBy}&sortDirection=${sortDirection}`;
-  
-  if (stockId) {
-    url += `&stockId=${stockId}`;
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  return fetch(url, {
-    credentials: 'include',
-  }).then(handleResponse);
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response && error.response.status === 403 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const newToken = await refreshTokenRequest();
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        logout();
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+const handleApiError = (error) => {
+  if (error.response) {
+    throw new Error(error.response.data.message || '서버 오류가 발생했습니다.');
+  } else if (error.request) {
+    throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해 주세요.');
+  } else {
+    throw new Error('예기치 않은 오류가 발생했습니다.');
+  }
+};
+
+export const createPost = async (userId, title, content) => {
+  try {
+    const response = await axiosInstance.post('/posts', { userId, title, content });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const addComment = async (userId, postId, content) => {
+  try {
+    const response = await axiosInstance.post(`/posts/${postId}/comments`, { userId, content });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const likePost = async (userId, postId) => {
+  try {
+    const response = await axiosInstance.post(`/posts/${postId}/likes`, { userId });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const follow = async (followerId, followedId) => {
+  try {
+    const response = await axiosInstance.post('/follow', { followerId, followedId });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const unfollow = async (followerId, followedId) => {
+  try {
+    const response = await axiosInstance.post('/unfollow', { followerId, followedId });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const getPostsByUserId = async (userId) => {
+  try {
+    const response = await axiosInstance.get(`/posts/user/${userId}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const getPostsWithActivity = async (userId) => {
+  try {
+    const response = await axiosInstance.get(`/posts/${userId}/with-activity`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const getFollowers = async (userId) => {
+  try {
+    const response = await axiosInstance.get(`/followers/${userId}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const getFollowing = async (userId) => {
+  try {
+    const response = await axiosInstance.get(`/following/${userId}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const searchPosts = async (query, stockId, page = 0, size = 10, sortBy = 'createdAt', sortDirection = 'desc') => {
+  try {
+    const params = { query, page, size, sortBy, sortDirection };
+    if (stockId) params.stockId = stockId;
+    const response = await axiosInstance.get('/posts/search', { params });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
 };

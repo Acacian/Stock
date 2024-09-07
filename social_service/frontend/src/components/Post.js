@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { likePost, addComment } from '../services/SocialApi';
+import { useAuth } from '../context/AuthContext';
 
-const Post = ({ post, currentUserId }) => {
+const Post = ({ post }) => {
   const [comment, setComment] = useState('');
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [commentCount, setCommentCount] = useState(post.commentCount);
+  const { socialActions } = useAuth();
 
   const handleLike = async () => {
     try {
-      await likePost(currentUserId, post.id);
+      await socialActions.likePost(post.id);
       setLikeCount(prevCount => prevCount + 1);
     } catch (error) {
       console.error('Error liking post:', error);
@@ -18,7 +19,7 @@ const Post = ({ post, currentUserId }) => {
   const handleAddComment = async (e) => {
     e.preventDefault();
     try {
-      await addComment(currentUserId, post.id, comment);
+      await socialActions.addComment(post.id, comment);
       setComment('');
       setCommentCount(prevCount => prevCount + 1);
     } catch (error) {

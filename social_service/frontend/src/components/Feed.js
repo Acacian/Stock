@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { getPostsWithActivity } from '../services/SocialApi';
+import { useAuth } from '../context/AuthContext';
 import Post from './Post';
 import CreatePost from './CreatePost';
 
-const Feed = ({ userId }) => {
+const Feed = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user, socialActions } = useAuth();
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const fetchedPosts = await getPostsWithActivity(userId);
+      const fetchedPosts = await socialActions.getPostsWithActivity();
       setPosts(fetchedPosts);
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -23,16 +24,16 @@ const Feed = ({ userId }) => {
 
   useEffect(() => {
     fetchPosts();
-  }, [userId]);
+  }, []);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
 
   return (
     <div className="feed">
-      <CreatePost userId={userId} onPostCreated={fetchPosts} />
+      <CreatePost onPostCreated={fetchPosts} />
       {posts.map(post => (
-        <Post key={post.id} post={post} currentUserId={userId} />
+        <Post key={post.id} post={post} />
       ))}
     </div>
   );
