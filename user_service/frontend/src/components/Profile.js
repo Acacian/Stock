@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getUserProfile, updateUserProfile, uploadProfileImage } from '../services/UserApi';
-import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
-  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -11,10 +9,9 @@ const Profile = () => {
   const [imageFile, setImageFile] = useState(null);
 
   const fetchProfile = useCallback(async () => {
-    if (!user || !user.id) return;
     try {
       setLoading(true);
-      const data = await getUserProfile(user.id);
+      const data = await getUserProfile();
       setProfile(data);
       setError('');
     } catch (error) {
@@ -22,13 +19,11 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
-    if (!authLoading) {
-      fetchProfile();
-    }
-  }, [authLoading, fetchProfile]);
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,7 +40,7 @@ const Profile = () => {
     setUpdateSuccess(false);
   
     try {
-      let updatedProfile = await updateUserProfile(user.id, {
+      let updatedProfile = await updateUserProfile({
         name: profile.name,
         introduction: profile.introduction
       });
@@ -53,29 +48,24 @@ const Profile = () => {
       if (imageFile) {
         const formData = new FormData();
         formData.append('file', imageFile);
-        formData.append('userId', user.id);
         const imageResponse = await uploadProfileImage(formData);
         updatedProfile = { ...updatedProfile, profileImage: imageResponse.fileUrl };
       }
 
       setProfile(updatedProfile);
       setUpdateSuccess(true);
-      setImageFile(null); // Reset the image file after successful upload
+      setImageFile(null);
     } catch (error) {
       setError('Failed to update profile. Please try again.');
     }
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return <div>Loading profile...</div>;
   }
 
   if (error) {
     return <div style={{ color: 'red' }}>{error}</div>;
-  }
-
-  if (!user) {
-    return <div>Please log in to view your profile.</div>;
   }
 
   if (!profile) {

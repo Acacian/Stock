@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import SocialApi from '../services/SocialApi';
 
 const CreatePost = ({ onPostCreated }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const { socialActions } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await socialActions.createPost(title, content);
+      await SocialApi.createPost(title, content);
       setTitle('');
       setContent('');
       onPostCreated();
@@ -17,7 +16,7 @@ const CreatePost = ({ onPostCreated }) => {
       console.error('Error creating post:', error);
     }
   };
-
+  
   return (
     <form onSubmit={handleSubmit}>
       <input

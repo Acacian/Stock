@@ -27,7 +27,9 @@ spring:
               - DELETE
               - OPTIONS
             allowedHeaders: "*"
+            exposedHeaders: "*"
             allowCredentials: true
+            maxAge: 3600
 
 eureka:
   client:
@@ -70,8 +72,9 @@ resilience4j:
 
 logging:
   level:
-    root: DEBUG
-    org.springframework.cloud.gateway: DEBUG
+    root: INFO
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.web.cors: TRACE
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
   pattern:

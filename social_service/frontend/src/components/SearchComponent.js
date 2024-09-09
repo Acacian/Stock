@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import SocialApi from '../services/SocialApi';
 
 const SearchComponent = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
-  const { socialActions } = useAuth();
 
   const handleSearch = async (e) => {
     e.preventDefault();
     try {
-      const searchResults = await socialActions.searchPosts(query);
+      const searchResults = await SocialApi.searchPosts(query);
       setResults(searchResults.content);
     } catch (error) {
       console.error('Error searching posts:', error);

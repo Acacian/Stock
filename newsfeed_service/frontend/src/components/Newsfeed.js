@@ -1,15 +1,27 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import NewsfeedItem from './NewsfeedItem';
-import { useAuth } from '../context/AuthContext';
+import NewsfeedApi from '../services/NewsfeedApi';
+import TokenService from '../services/TokenService';
 
 const Newsfeed = () => {
-  const { user, newsfeed, fetchNewsfeed } = useAuth();
+  const [newsfeed, setNewsfeed] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchNewsfeed(user.id);
-    }
-  }, [user, fetchNewsfeed]);
+    const fetchNewsfeedData = async () => {
+      try {
+        setLoading(true);
+        const data = await NewsfeedApi.fetchNewsfeed();
+        setNewsfeed(data);
+      } catch (error) {
+        console.error('Failed to fetch newsfeed:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNewsfeedData();
+  }, []);
 
   const handleAction = (action, targetId) => {
     // Send message to social service
@@ -17,9 +29,13 @@ const Newsfeed = () => {
       type: 'SOCIAL_ACTION',
       action: action,
       targetId: targetId,
-      userId: user.id
+      userId: TokenService.getUserId()
     }, '*');
   };
+
+  if (loading) {
+    return <div>Loading newsfeed...</div>;
+  }
 
   return (
     <div className="newsfeed-container">
@@ -27,7 +43,7 @@ const Newsfeed = () => {
         <NewsfeedItem 
           key={index} 
           item={item} 
-          currentUserId={user.id}
+          currentUserId={TokenService.getUserId()}
           onAction={handleAction}
         />
       ))}

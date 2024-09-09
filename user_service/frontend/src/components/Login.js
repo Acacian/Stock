@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { loginUser } from '../services/UserApi';
+import TokenService from '../services/TokenService';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -18,8 +18,9 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      const success = await login(credentials.email, credentials.password);
-      if (success) {
+      const response = await loginUser(credentials.email, credentials.password);
+      if (response.accessToken) {
+        TokenService.setTokens(response.accessToken, response.refreshToken);
         console.log('Login successful, redirecting...');
         navigate('/profile');
       } else {
@@ -32,7 +33,7 @@ const Login = () => {
       setLoading(false);
     }
   };
-
+  
   return (
     <form onSubmit={handleSubmit}>
       <h2>Login</h2>

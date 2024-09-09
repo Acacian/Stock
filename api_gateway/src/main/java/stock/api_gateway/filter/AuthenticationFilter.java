@@ -71,7 +71,9 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     }
 
     private boolean isOpenEndpoint(String path) {
-        return path.contains("/api/auth/register") || path.contains("/api/auth/login");
+        boolean isOpen = path.contains("/api/auth/register") || path.contains("/api/auth/login");
+        logger.info("Checking if {} is an open endpoint: {}", path, isOpen);
+        return isOpen;
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {

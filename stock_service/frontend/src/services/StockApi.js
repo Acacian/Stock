@@ -1,61 +1,50 @@
 import axios from 'axios';
+import TokenService from './TokenService';
 
 const API_URL = process.env.REACT_APP_STOCK_API_URL || '/api/stock';
-const AUTH_URL = process.env.REACT_APP_AUTH_URL || '/api/auth';
+const AUTH_URL = process.env.REACT_APP_AUTH_URL || 'https://localhost:3001/api/auth';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
 });
 
-const refreshTokenRequest = async () => {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) {
-    throw new Error('No refresh token available');
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = TokenService.getAccessToken();
+    if (token) {
+      config.headers['Authorization'] = 'Bearer ' + token;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  try {
-    const response = await axios.post(`${AUTH_URL}/refresh-token`, { refreshToken });
-    const { token } = response.data;
-    localStorage.setItem('token', token);
-    return token;
-  } catch (error) {
-    console.error('Failed to refresh token:', error);
-    throw error;
-  }
-};
-
-const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-  // 여기에 추가적인 로그아웃 로직을 구현할 수 있습니다.
-  // 예: 리덕스 스토어 초기화, 로그인 페이지로 리다이렉트 등
-  window.location.href = '/login'; // 로그인 페이지로 리다이렉트
-};
-
-axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+);
 
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response && error.response.status === 403 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const newToken = await refreshTokenRequest();
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        const refreshToken = TokenService.getRefreshToken();
+        // 1. RefreshTokenRequest 객체 구조에 맞게 수정
+        const response = await axios.post(`${AUTH_URL}/refresh`, { refreshToken: refreshToken });
+        // 2. 새로운 accessToken과 refreshToken 모두 추출
+        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        // 새 refreshToken이 제공되면 그것을 사용, 아니면 기존 것을 유지
+        TokenService.setTokens(accessToken, newRefreshToken || refreshToken);
+        originalRequest.headers['Authorization'] = 'Bearer ' + accessToken;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
-        logout(); // 토큰 갱신 실패 시 자동 로그아웃
+        TokenService.removeTokens();
+        // 3. '/login' 대신 AUTH_URL로 리다이렉트
+        window.location.href = AUTH_URL;
         return Promise.reject(refreshError);
       }
     }
@@ -63,25 +52,12 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-const handleApiError = (error) => {
-  if (error.response) {
-    if (error.response.status === 403) {
-      throw new Error('접근 권한이 없습니다. 로그인 상태를 확인해주세요.');
-    }
-    throw new Error(error.response.data.message || '서버 오류가 발생했습니다.');
-  } else if (error.request) {
-    throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해 주세요.');
-  } else {
-    throw new Error('예기치 않은 오류가 발생했습니다.');
-  }
-};
-
 export const getAllStocks = async (page = 0, size = 10, sort = 'name,asc') => {
   try {
     const response = await axiosInstance.get('', { params: { page, size, sort } });
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    throw new Error(error.response?.data?.message || '주식 목록을 불러오는데 실패했습니다.');
   }
 };
 
@@ -90,7 +66,7 @@ export const getStockById = async (id) => {
     const response = await axiosInstance.get(`/${id}`);
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    throw new Error(error.response?.data?.message || '주식 정보를 불러오는데 실패했습니다.');
   }
 };
 
@@ -101,7 +77,7 @@ export const getStockPrices = async (stockId, period = 'daily', startDate, endDa
     });
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    throw new Error(error.response?.data?.message || '주식 가격 정보를 불러오는데 실패했습니다.');
   }
 };
 
@@ -112,7 +88,7 @@ export const searchStocks = async (query, page = 0, size = 10, sort = 'name,asc'
     });
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    throw new Error(error.response?.data?.message || '주식 검색에 실패했습니다.');
   }
 };
 
@@ -123,7 +99,7 @@ export const getStocksSortedByYesterdayTrading = async (page = 0, size = 10, dir
     });
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    throw new Error(error.response?.data?.message || '주식 정렬에 실패했습니다.');
   }
 };
 
@@ -134,7 +110,7 @@ export const getStocksSortedByYesterdayChangeRate = async (page = 0, size = 10, 
     });
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    throw new Error(error.response?.data?.message || '주식 정렬에 실패했습니다.');
   }
 };
 
@@ -143,7 +119,25 @@ export const getTechnicalIndicator = async (stockCode, indicatorType) => {
     const response = await axiosInstance.get(`/${stockCode}/indicators/${indicatorType}`);
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    throw new Error(error.response?.data?.message || '기술적 지표를 불러오는데 실패했습니다.');
+  }
+};
+
+export const getComments = async (stockId, page = 0, size = 10) => {
+  try {
+    const response = await axiosInstance.get(`/${stockId}/comments`, { params: { page, size } });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || '댓글을 불러오는데 실패했습니다.');
+  }
+};
+
+export const addComment = async (stockId, content) => {
+  try {
+    const response = await axiosInstance.post(`/${stockId}/comments`, { content });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || '댓글 작성에 실패했습니다.');
   }
 };
 
@@ -155,6 +149,8 @@ const StockApi = {
   getStocksSortedByYesterdayTrading,
   getStocksSortedByYesterdayChangeRate,
   getTechnicalIndicator,
+  getComments,
+  addComment,
 };
 
 export default StockApi;

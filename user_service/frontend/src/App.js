@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import TokenService from './services/TokenService';
 import Login from './components/Login';
 import Register from './components/Register';
 import Profile from './components/Profile';
@@ -9,20 +9,11 @@ import Navbar from './components/Navbar';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  return user ? children : <Navigate to="/login" />;
+  const isLoggedIn = !!TokenService.getAccessToken();
+  return isLoggedIn ? children : <Navigate to="/login" />;
 };
 
-function AppContent() {
-  const { loading } = useAuth();
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
+function App() {
   return (
     <Router>
       <div className="App">
@@ -32,18 +23,10 @@ function AppContent() {
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Navigate to="/profile" />} />
         </Routes>
       </div>
     </Router>
-  );
-}
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   );
 }
 

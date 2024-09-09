@@ -11,7 +11,6 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebExceptionHandler;
 
@@ -78,12 +77,14 @@ public class GatewayConfig {
             response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
             String errorMessage = "An unexpected error occurred";
-            if (ex instanceof AuthenticationException) {
-                response.setStatusCode(HttpStatus.UNAUTHORIZED);
-                errorMessage = "Authentication failed";
-            } else if (ex instanceof Exception && ex.getMessage().contains("Rate limit exceeded")) {
-                response.setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-                errorMessage = "Rate limit exceeded";
+            if (ex instanceof Exception) {
+                if (ex.getMessage().contains("Authentication failed")) {
+                    response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                    errorMessage = "Authentication failed";
+                } else if (ex.getMessage().contains("Rate limit exceeded")) {
+                    response.setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+                    errorMessage = "Rate limit exceeded";
+                }
             }
 
             byte[] bytes = ("{\"error\":\"" + errorMessage + "\"}").getBytes(StandardCharsets.UTF_8);

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { updatePassword } from '../services/UserApi';
-import { useAuth } from '../context/AuthContext';
 
 const Settings = () => {
-  const { user } = useAuth();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
@@ -14,7 +12,7 @@ const Settings = () => {
     setError('');
     setSuccess('');
     try {
-      await updatePassword(user.id, oldPassword, newPassword);
+      await updatePassword(oldPassword, newPassword);
       setSuccess('Password updated successfully');
       setOldPassword('');
       setNewPassword('');

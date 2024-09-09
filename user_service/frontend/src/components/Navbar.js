@@ -1,28 +1,26 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { logoutUser } from '../services/UserApi';
+import TokenService from '../services/TokenService';
 
 const Navbar = () => {
-  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    console.log('Current user state in Navbar:', user); // 디버깅용
-  }, [user]);
+  const isLoggedIn = !!TokenService.getAccessToken();
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    try {
+      await logoutUser();
+      TokenService.removeTokens();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
-
-  if (loading) {
-    return <nav>Loading...</nav>;
-  }
 
   return (
     <nav>
       <ul>
-        {user ? (
+        {isLoggedIn ? (
           <>
             <li><Link to="/profile">Profile</Link></li>
             <li><Link to="/settings">Settings</Link></li>

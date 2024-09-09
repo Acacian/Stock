@@ -1,59 +1,52 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { ErrorBoundary } from 'react-error-boundary';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import TokenService from './services/TokenService';
 import StockList from './components/StockList';
 import StockDetail from './components/StockDetail';
 import StockDiscussion from './components/StockDiscussion';
 import './App.css';
 
-function ErrorFallback({error, resetErrorBoundary}) {
-  return (
-    <div role="alert" className="error-fallback">
-      <h2>오류가 발생했습니다</h2>
-      <p>죄송합니다. 문제가 발생했습니다:</p>
-      <pre>{error.message}</pre>
-      <button onClick={resetErrorBoundary}>다시 시도</button>
-    </div>
-  );
-}
+// 환경 변수에서 인증 서비스 URL을 가져옵니다.
+const AUTH_SERVICE_URL = process.env.REACT_APP_AUTH_SERVICE_URL || 'https://localhost:3001';
 
-function AppContent() {
-  const { user, loading } = useAuth();
+function App() {
+  const isAuthenticated = () => TokenService.getAccessToken() !== null;
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  // 인증되지 않은 사용자를 인증 서비스로 리다이렉션하는 함수
+  const redirectToAuth = () => {
+    window.location.href = AUTH_SERVICE_URL;
+  };
+
+  // 보호된 라우트를 위한 컴포넌트
+  const ProtectedRoute = ({ children }) => {
+    useEffect(() => {
+      if (!isAuthenticated()) {
+        redirectToAuth();
+      }
+    }, []);
+
+    return isAuthenticated() ? children : null;
+  };
 
   return (
     <Router>
       <div className="App">
-        <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => window.location.reload()}>
-          <Routes>
-            <Route path="/" element={
-              user ? <ErrorBoundary FallbackComponent={ErrorFallback}><StockList /></ErrorBoundary>
-              : <Navigate to="https://localhost:3001/login" />
-            } />
-            <Route path="/stock/:stockId" element={
-              user ? <ErrorBoundary FallbackComponent={ErrorFallback}><StockDetail /></ErrorBoundary>
-              : <Navigate to="https://localhost:3001/login" />
-            } />
-            <Route path="/stock/:stockId/discussion" element={
-              user ? <ErrorBoundary FallbackComponent={ErrorFallback}><StockDiscussion user={user} /></ErrorBoundary>
-              : <Navigate to="https://localhost:3001/login" />
-            } />
-          </Routes>
-        </ErrorBoundary>
+        <Routes>
+          <Route 
+            path="/" 
+            element={<ProtectedRoute><StockList /></ProtectedRoute>} 
+          />
+          <Route 
+            path="/stock/:stockId" 
+            element={<ProtectedRoute><StockDetail /></ProtectedRoute>} 
+          />
+          <Route 
+            path="/stock/:stockId/discussion" 
+            element={<ProtectedRoute><StockDiscussion /></ProtectedRoute>} 
+          />
+        </Routes>
       </div>
     </Router>
-  );
-}
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   );
 }
 

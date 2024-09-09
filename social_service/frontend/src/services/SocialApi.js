@@ -1,7 +1,8 @@
 import axios from 'axios';
+import TokenService from './TokenService';
 
 const API_URL = process.env.REACT_APP_SOCIAL_API_URL || 'https://localhost:8081/api/social';
-const AUTH_URL = process.env.REACT_APP_AUTH_URL || '/api/auth';
+const AUTH_URL = process.env.REACT_APP_AUTH_URL || 'https://localhost:3001/api/auth';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
@@ -11,30 +12,8 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-const refreshTokenRequest = async () => {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) {
-    throw new Error('No refresh token available');
-  }
-  try {
-    const response = await axios.post(`${AUTH_URL}/refresh-token`, { refreshToken });
-    const { token } = response.data;
-    localStorage.setItem('token', token);
-    return token;
-  } catch (error) {
-    console.error('Failed to refresh token:', error);
-    throw error;
-  }
-};
-
-const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-  window.location.href = '/login';
-};
-
 axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = TokenService.getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -45,15 +24,19 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response && error.response.status === 403 && !originalRequest._retry) {
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const newToken = await refreshTokenRequest();
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        const refreshToken = TokenService.getRefreshToken();
+        const response = await axios.post(`${AUTH_URL}/refresh`, { refreshToken });
+        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        TokenService.setTokens(accessToken, newRefreshToken);
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
-        logout();
+        TokenService.removeTokens();
+        window.location.href = AUTH_URL; // 인증 서비스 URL로 리다이렉트
         return Promise.reject(refreshError);
       }
     }
@@ -71,81 +54,81 @@ const handleApiError = (error) => {
   }
 };
 
-export const createPost = async (userId, title, content) => {
+export const createPost = async (title, content) => {
   try {
-    const response = await axiosInstance.post('/posts', { userId, title, content });
+    const response = await axiosInstance.post('/posts', { title, content });
     return response.data;
   } catch (error) {
     handleApiError(error);
   }
 };
 
-export const addComment = async (userId, postId, content) => {
+export const addComment = async (postId, content) => {
   try {
-    const response = await axiosInstance.post(`/posts/${postId}/comments`, { userId, content });
+    const response = await axiosInstance.post(`/posts/${postId}/comments`, { content });
     return response.data;
   } catch (error) {
     handleApiError(error);
   }
 };
 
-export const likePost = async (userId, postId) => {
+export const likePost = async (postId) => {
   try {
-    const response = await axiosInstance.post(`/posts/${postId}/likes`, { userId });
+    const response = await axiosInstance.post(`/posts/${postId}/likes`);
     return response.data;
   } catch (error) {
     handleApiError(error);
   }
 };
 
-export const follow = async (followerId, followedId) => {
+export const follow = async (followedId) => {
   try {
-    const response = await axiosInstance.post('/follow', { followerId, followedId });
+    const response = await axiosInstance.post('/follow', { followedId });
     return response.data;
   } catch (error) {
     handleApiError(error);
   }
 };
 
-export const unfollow = async (followerId, followedId) => {
+export const unfollow = async (followedId) => {
   try {
-    const response = await axiosInstance.post('/unfollow', { followerId, followedId });
+    const response = await axiosInstance.post('/unfollow', { followedId });
     return response.data;
   } catch (error) {
     handleApiError(error);
   }
 };
 
-export const getPostsByUserId = async (userId) => {
+export const getPostsByUserId = async () => {
   try {
-    const response = await axiosInstance.get(`/posts/user/${userId}`);
+    const response = await axiosInstance.get('/posts/user');
     return response.data;
   } catch (error) {
     handleApiError(error);
   }
 };
 
-export const getPostsWithActivity = async (userId) => {
+export const getPostsWithActivity = async () => {
   try {
-    const response = await axiosInstance.get(`/posts/${userId}/with-activity`);
+    const response = await axiosInstance.get('/posts/with-activity');
     return response.data;
   } catch (error) {
     handleApiError(error);
   }
 };
 
-export const getFollowers = async (userId) => {
+export const getFollowers = async () => {
   try {
-    const response = await axiosInstance.get(`/followers/${userId}`);
+    const response = await axiosInstance.get('/followers');
     return response.data;
   } catch (error) {
     handleApiError(error);
   }
 };
 
-export const getFollowing = async (userId) => {
+export const getFollowing = async () => {
   try {
-    const response = await axiosInstance.get(`/following/${userId}`);
+    const response = await axiosInstance.get('/following');
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -162,3 +145,18 @@ export const searchPosts = async (query, stockId, page = 0, size = 10, sortBy = 
     handleApiError(error);
   }
 };
+
+const SocialApi = {
+  createPost,
+  addComment,
+  likePost,
+  follow,
+  unfollow,
+  getPostsByUserId,
+  getPostsWithActivity,
+  getFollowers,
+  getFollowing,
+  searchPosts,
+};
+
+export default SocialApi;

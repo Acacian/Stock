@@ -28,6 +28,7 @@ public class LoggingFilter implements GlobalFilter, Ordered {
             HttpStatusCode statusCode = exchange.getResponse().getStatusCode();
             logger.info("Request: {} {} | Query: {} | Status: {} | Duration: {}ms",
                     method, requestPath, queryParams, statusCode, duration);
+            logger.info("Incoming request: {} {} | Headers: {}", method, requestPath, exchange.getRequest().getHeaders());
         }));
     }
 

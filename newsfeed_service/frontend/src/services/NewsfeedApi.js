@@ -1,7 +1,8 @@
 import axios from 'axios';
+import TokenService from './TokenService';
 
 const API_URL = process.env.REACT_APP_NEWSFEED_API_URL || 'https://localhost:8081/api/newsfeed';
-const AUTH_URL = process.env.REACT_APP_AUTH_URL || '/api/auth';
+const AUTH_URL = process.env.REACT_APP_AUTH_URL || 'https://localhost:3001/api/auth';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
@@ -11,30 +12,8 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-const refreshTokenRequest = async () => {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) {
-    throw new Error('No refresh token available');
-  }
-  try {
-    const response = await axios.post(`${AUTH_URL}/refresh-token`, { refreshToken });
-    const { token } = response.data;
-    localStorage.setItem('token', token);
-    return token;
-  } catch (error) {
-    console.error('Failed to refresh token:', error);
-    throw error;
-  }
-};
-
-const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-  window.location.href = '/login';
-};
-
 axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = TokenService.getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -45,15 +24,19 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response && error.response.status === 403 && !originalRequest._retry) {
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const newToken = await refreshTokenRequest();
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        const refreshToken = TokenService.getRefreshToken();
+        const response = await axios.post(`${AUTH_URL}/refresh`, { refreshToken });
+        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        TokenService.setTokens(accessToken, newRefreshToken);
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
-        logout();
+        TokenService.removeTokens();
+        window.location.href = AUTH_URL; // 인증 서비스 URL로 리다이렉트
         return Promise.reject(refreshError);
       }
     }
@@ -71,9 +54,9 @@ const handleApiError = (error) => {
   }
 };
 
-const fetchNewsfeed = async (userId) => {
+const fetchNewsfeed = async () => {
   try {
-    const response = await axiosInstance.get(`/${userId}`);
+    const response = await axiosInstance.get('/');
     return response.data;
   } catch (error) {
     handleApiError(error);

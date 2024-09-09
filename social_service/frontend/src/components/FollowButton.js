@@ -1,42 +1,27 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import SocialApi from '../services/SocialApi';
 
-const SearchComponent = () => {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
-  const { socialActions } = useAuth();
+const FollowButton = ({ targetUserId, initialIsFollowing }) => {
+  const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  const handleFollow = async () => {
     try {
-      const searchResults = await socialActions.searchPosts(query);
-      setResults(searchResults.content);
+      if (isFollowing) {
+        await SocialApi.unfollow(targetUserId);
+      } else {
+        await SocialApi.follow(targetUserId);
+      }
+      setIsFollowing(!isFollowing);
     } catch (error) {
-      console.error('Error searching posts:', error);
+      console.error('Error following/unfollowing:', error);
     }
   };
 
   return (
-    <div>
-      <form onSubmit={handleSearch}>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search posts..."
-        />
-        <button type="submit">Search</button>
-      </form>
-      <div>
-        {results.map(post => (
-          <div key={post.id}>
-            <h3>{post.title}</h3>
-            <p>{post.content}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+    <button onClick={handleFollow}>
+      {isFollowing ? 'Unfollow' : 'Follow'}
+    </button>
   );
 };
 
-export default SearchComponent;
+export default FollowButton;

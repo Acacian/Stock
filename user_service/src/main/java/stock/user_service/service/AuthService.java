@@ -200,10 +200,17 @@ public class AuthService {
     }
 
     public JwtAuthenticationResponse refreshToken(String refreshToken) {
+        logger.info("Attempting to refresh token");
         if (tokenProvider.validateToken(refreshToken)) {
             String username = tokenProvider.getUsernameFromJWT(refreshToken);
+            logger.info("Token validated, username: {}", username);
             String storedRefreshToken = getRefreshToken(username);
+            if (storedRefreshToken == null) {
+                logger.warn("No stored refresh token found for user: {}", username);
+                throw new InvalidTokenException("No stored refresh token found");
+            }
             if (refreshToken.equals(storedRefreshToken)) {
+                logger.info("Stored token matches provided token for user: {}", username);
                 UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
                 Authentication authentication = 
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -211,20 +218,26 @@ public class AuthService {
                 String newRefreshToken = tokenProvider.generateRefreshToken(authentication);
                 
                 saveRefreshToken(username, newRefreshToken);
-                
+                logger.info("New tokens generated for user: {}", username);
                 return new JwtAuthenticationResponse(newAccessToken, newRefreshToken);
+            } else {
+                logger.warn("Stored token does not match provided token for user: {}", username);
             }
+        } else {
+            logger.warn("Invalid refresh token provided");
         }
         throw new InvalidTokenException("Invalid refresh token");
     }
 
     public void saveRefreshToken(String username, String refreshToken) {
+        logger.info("Saving refresh token for user: {}", username);
         redisTemplate.opsForValue().set(
             "refresh_token:" + username,
             refreshToken,
             refreshTokenExpirationInMs,
             TimeUnit.MILLISECONDS
         );
+        logger.info("Refresh token saved successfully for user: {}", username);
     }
 
     public String getRefreshToken(String username) {
