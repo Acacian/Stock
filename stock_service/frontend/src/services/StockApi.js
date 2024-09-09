@@ -11,11 +11,20 @@ const axiosInstance = axios.create({
   },
 });
 
+// 인증이 필요한 요청에만 토큰을 추가하는 함수
+const addAuthHeader = (config) => {
+  const token = TokenService.getAccessToken();
+  if (token) {
+    config.headers['Authorization'] = 'Bearer ' + token;
+  }
+  return config;
+};
+
+// 인터셉터 수정: 댓글 관련 API에만 인증 헤더 추가
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = TokenService.getAccessToken();
-    if (token) {
-      config.headers['Authorization'] = 'Bearer ' + token;
+    if (config.url.includes('/comments')) {
+      return addAuthHeader(config);
     }
     return config;
   },
@@ -24,6 +33,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// 응답 인터셉터는 그대로 유지 (토큰 갱신 로직)
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -32,18 +42,14 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const refreshToken = TokenService.getRefreshToken();
-        // 1. RefreshTokenRequest 객체 구조에 맞게 수정
         const response = await axios.post(`${AUTH_URL}/refresh`, { refreshToken: refreshToken });
-        // 2. 새로운 accessToken과 refreshToken 모두 추출
         const { accessToken, refreshToken: newRefreshToken } = response.data;
-        // 새 refreshToken이 제공되면 그것을 사용, 아니면 기존 것을 유지
         TokenService.setTokens(accessToken, newRefreshToken || refreshToken);
         originalRequest.headers['Authorization'] = 'Bearer ' + accessToken;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
         TokenService.removeTokens();
-        // 3. '/login' 대신 AUTH_URL로 리다이렉트
         window.location.href = AUTH_URL;
         return Promise.reject(refreshError);
       }
@@ -125,7 +131,10 @@ export const getTechnicalIndicator = async (stockCode, indicatorType) => {
 
 export const getComments = async (stockId, page = 0, size = 10) => {
   try {
-    const response = await axiosInstance.get(`/${stockId}/comments`, { params: { page, size } });
+    const response = await axiosInstance.get(`/${stockId}/comments`, { 
+      params: { page, size },
+      headers: addAuthHeader({}).headers // 인증 헤더 추가
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || '댓글을 불러오는데 실패했습니다.');
@@ -134,7 +143,9 @@ export const getComments = async (stockId, page = 0, size = 10) => {
 
 export const addComment = async (stockId, content) => {
   try {
-    const response = await axiosInstance.post(`/${stockId}/comments`, { content });
+    const response = await axiosInstance.post(`/${stockId}/comments`, { content }, {
+      headers: addAuthHeader({}).headers // 인증 헤더 추가
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || '댓글 작성에 실패했습니다.');

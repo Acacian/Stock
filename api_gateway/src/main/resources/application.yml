@@ -66,16 +66,16 @@ resilience4j:
   ratelimiter:
     instances:
       default:
-        limitForPeriod: 10
+        limitForPeriod: 10000000
         limitRefreshPeriod: PT1S
         timeoutDuration: PT0.1S
 
 logging:
   level:
     root: INFO
-    org.springframework.cloud.gateway: TRACE
-    org.springframework.web.cors: TRACE
-    org.springframework.web: DEBUG
-    org.springframework.security: DEBUG
+    org.springframework.cloud.gateway: INFO
+    org.springframework.web.cors: INFO
+    org.springframework.web: INFO
+    org.springframework.security: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
