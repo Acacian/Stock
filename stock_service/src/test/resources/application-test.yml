@@ -6,9 +6,9 @@ spring:
   application:
     name: STOCK-SERVICE
   datasource:
-    url: jdbc:mysql://${SERVERS:localhost}:3306/Stock_Test
+    url: jdbc:mysql://${SERVERS:db}:3306/Stock_Test
     username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${TEST_DB_PASSWORD:test}
+    password: ${TEST_DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,13 +17,8 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         jdbc:
           batch_size: 50
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
   kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:localhost}:${KAFKA_PORT:9092}
+    bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9092}
     consumer:
       group-id: ${spring.application.name}-group
       auto-offset-reset: earliest
@@ -49,11 +44,6 @@ spring:
       static-locations: classpath:/static/,file:/app/static/
   mvc:
     throw-exception-if-no-handler-found: true
-  batch:
-    job:
-      enabled: false
-    jdbc:
-      initialize-schema: always
 
 server:
   port: 8085
@@ -66,11 +56,10 @@ logging:
 
 eureka:
   client:
-    enabled: false
     serviceUrl:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
-    fetch-registry: false
-    register-with-eureka: false
+      defaultZone: ${EUREKA_SERVER_URL}
+    fetch-registry: true
+    register-with-eureka: true
   instance:
     preferIpAddress: true
 

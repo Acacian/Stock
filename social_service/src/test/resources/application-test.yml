@@ -6,14 +6,9 @@ spring:
   application:
     name: SOCIAL-SERVICE
   datasource:
-    url: jdbc:mysql://${SERVERS:localhost}:3306/Stock_Test
+    url: jdbc:mysql://${SERVERS:db}:3306/Stock_Test
     username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${TEST_DB_PASSWORD:test}
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+    password: ${TEST_DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
@@ -21,7 +16,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
   kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:localhost}:${KAFKA_PORT:9092}
+    bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9092}
     consumer:
       group-id: ${spring.application.name}-group
       auto-offset-reset: earliest
@@ -54,11 +49,10 @@ logging:
 
 eureka:
   client:
-    enabled: false
     serviceUrl:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
-    fetch-registry: false
-    register-with-eureka: false
+      defaultZone: ${EUREKA_SERVER_URL}
+    fetch-registry: true
+    register-with-eureka: true
   instance:
     preferIpAddress: true
 

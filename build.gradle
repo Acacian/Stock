@@ -5,9 +5,9 @@ plugins {
 }
 
 ext {
-    set('springCloudVersion', '2022.0.4')
-    set('resilience4jVersion', '2.1.0')
-    set('jwtVersion', '0.11.5')
+    set('springCloudVersion', "2022.0.4")
+    set('resilience4jVersion', "2.1.0")
+    set('jwtVersion', "0.11.5")
 }
 
 allprojects {
@@ -35,12 +35,13 @@ subprojects {
     dependencies {
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
-
+        
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testImplementation 'org.junit.jupiter:junit-jupiter-api'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     }
 
+    // JWT 의존성을 사용하는 프로젝트들에 공통으로 적용
     if (project.name in ['user_service', 'api_gateway']) {
         dependencies {
             implementation "io.jsonwebtoken:jjwt-api:${jwtVersion}"
@@ -49,6 +50,7 @@ subprojects {
         }
     }
 
+    // Stock Service에만 적용되는 의존성
     if (project.name == 'stock_service') {
         dependencies {
             implementation 'org.springframework.retry:spring-retry'
@@ -57,6 +59,7 @@ subprojects {
         }
     }
 
+    // User Service에만 적용되는 의존성
     if (project.name == 'user_service') {
         dependencies {
             implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -64,30 +67,34 @@ subprojects {
             implementation 'org.springframework.boot:spring-boot-starter-mail'
             implementation 'com.fasterxml.uuid:java-uuid-generator:4.0.1'
             implementation 'com.github.f4b6a3:uuid-creator:5.1.0'
-            implementation 'org.springframework.boot:spring-boot-starter-cache'
             testImplementation 'org.assertj:assertj-core:3.24.2'
             testImplementation 'org.springframework.security:spring-security-test'
+            implementation 'org.springframework.boot:spring-boot-starter-cache'
         }
     }
 
+    // Social Service에만 적용되는 의존성
     if (project.name == 'social_service') {
         dependencies {
             implementation 'org.springframework.boot:spring-boot-starter-websocket'
         }
     }
 
+    // newsfeed Service에만 적용되는 의존성
     if (project.name == 'newsfeed_service') {
         dependencies {
             implementation 'org.springframework.boot:spring-boot-starter-websocket'
         }
     }
 
+    // Eureka Server에만 적용되는 의존성
     if (project.name == 'eureka_server') {
         dependencies {
             implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-server'
         }
     }
 
+    // API Gateway에만 적용되는 의존성
     if (project.name == 'api_gateway') {
         dependencies {
             implementation 'io.micrometer:micrometer-registry-prometheus'
@@ -100,11 +107,13 @@ subprojects {
         }
     }
 
+    // Eureka Server와 API Gateway를 제외한 모든 서브프로젝트에 적용
     if (!(project.name in ['eureka_server', 'api_gateway'])) {
         dependencies {
             implementation "io.github.resilience4j:resilience4j-spring-boot2:${resilience4jVersion}"
             implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
             implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+            
             implementation 'org.apache.kafka:kafka-streams'
             implementation 'org.springframework.boot:spring-boot-starter-web'
             implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -112,6 +121,7 @@ subprojects {
             implementation 'com.mysql:mysql-connector-j'
             implementation 'org.springframework.boot:spring-boot-starter-data-redis'
             implementation 'redis.clients:jedis'
+            
             testImplementation 'org.springframework.kafka:spring-kafka-test'
             testImplementation 'org.awaitility:awaitility:4.2.0'
             testImplementation 'org.mockito:mockito-core'
@@ -121,32 +131,31 @@ subprojects {
         }
     }
 
-    tasks.withType(Test).configureEach {
+    test {
         useJUnitPlatform()
-        systemProperty 'spring.profiles.active', System.getProperty('spring.profiles.active', 'test')
-
         testLogging {
-            events 'passed', 'skipped', 'failed'
+            events "passed", "skipped", "failed"
         }
     }
 
-    tasks.named('test') {
-        exclude '**/IntegrationTest*'
-    }
-
-    tasks.register('integrationTest', Test) {
-        description = "Runs integration tests for ${project.name}"
-        group = 'verification'
-        testClassesDirs = sourceSets.test.output.classesDirs
-        classpath = sourceSets.test.runtimeClasspath
+    task integrationTest(type: Test) {
+        useJUnitPlatform()
         include '**/IntegrationTest*'
-        shouldRunAfter tasks.named('test')
         systemProperty 'spring.profiles.active', 'test'
     }
 }
 
-tasks.register('integrationTest') {
-    description = 'Runs integration tests for all subprojects'
+task integrationTest(type: Test) {
+    description = 'Runs integration tests.'
     group = 'verification'
-    dependsOn(subprojects.collect { "${it.path}:integrationTest" })
+
+    def allTestClassesDirs = project.subprojects.collect { it.sourceSets.test.output.classesDirs }.flatten()
+    testClassesDirs = files(allTestClassesDirs)
+
+    def allRuntimeClasspaths = project.subprojects.collect { it.sourceSets.test.runtimeClasspath }.flatten()
+    classpath = files(allRuntimeClasspaths)
+
+    useJUnitPlatform()
+    include '**/IntegrationTest*'
+    systemProperty 'spring.profiles.active', 'test'
 }

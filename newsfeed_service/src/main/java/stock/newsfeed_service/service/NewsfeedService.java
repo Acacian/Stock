@@ -97,13 +97,6 @@ public class NewsfeedService {
                 .collect(Collectors.toList());
     }
 
-    public void clearAllNewsfeeds() {
-        Set<String> keys = redisTemplate.keys("newsfeed:*");
-        if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
-        }
-    }
-
     private String serializeNewsfeedItem(NewsfeedItem item) {
         try {
             return objectMapper.writeValueAsString(item);
