@@ -12,20 +12,33 @@
 ## Quick Start
 
 ```bash
+cat <<'EOF' > .env
+DB_PASSWORD=<your-db-password>
+DB_NAME=Stock
+JWT_SECRET=<your-jwt-secret>
+SSL_KEY_STORE_PASSWORD=<your-keystore-password>
+EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+REDIS_HOST=redis
+REDIS_PORT=6379
+APP_DOMAIN=https://localhost
+APP_UPLOAD_DIR=/app/uploads/profile_images
+APP_UPLOAD_URL=https://localhost/uploads
+SENDING_EMAIL=<your-smtp-email>
+EMAIL_PASSWORD=<your-smtp-app-password>
+EOF
+
 docker compose up --build -d
 ./gradlew clean build
 ./gradlew integrationTest
 ```
 
-실행 전 `.env`는 직접 준비해야 합니다.
-필수 값: `DB_PASSWORD`, `JWT_SECRET`, `SSL_KEY_STORE_PASSWORD`, `APP_DOMAIN`, `APP_UPLOAD_DIR`, `APP_UPLOAD_URL`
+실행 전 `.env`가 반드시 필요합니다. 예시 값은 위 블록처럼 직접 작성하고, 비밀값은 저장소에 커밋하지 않습니다.
 
 빠르게 확인할 수 있는 주소
 
 - Verification UI: `https://localhost`
 - Eureka: `http://localhost:8761`
 - Kafka UI: `http://localhost:8080`
-- Jenkins: `http://localhost:8082`
 
 ## 한눈에 보기
 
@@ -181,9 +194,15 @@ Refresh Token 저장, 로그아웃 토큰 블랙리스트, 캐시성 조회 데�
 주요 항목
 
 - `DB_PASSWORD`: 로컬 MySQL 비밀번호
+- `DB_NAME`: 기본 DB 이름, 로컬 실행 기준 `Stock`
 - `JWT_SECRET`: JWT 서명용 시크릿
 - `SENDING_EMAIL`, `EMAIL_PASSWORD`: 이메일 인증 발송 계정
 - `SSL_KEY_STORE_PASSWORD`: API Gateway 인증서 비밀번호
+- `EUREKA_SERVER_URL`: 로컬 compose 기준 `http://eureka-server:8761/eureka/`
+- `REDIS_HOST`, `REDIS_PORT`: 로컬 compose 기준 `redis`, `6379`
+- `APP_DOMAIN`: 로컬 compose 기준 `https://localhost`
+- `APP_UPLOAD_DIR`: 로컬 compose 기준 `/app/uploads/profile_images`
+- `APP_UPLOAD_URL`: 로컬 compose 기준 `https://localhost/uploads`
 
 ### 2. 로컬 실행
 
@@ -196,9 +215,13 @@ docker compose up --build -d
 - Verification UI: `https://localhost`
 - Eureka: `http://localhost:8761`
 - Kafka UI: `http://localhost:8080`
-- Jenkins: `http://localhost:8082`
 
 간단한 백엔드 검증용 UI는 `api_gateway` 정적 리소스로 포함했습니다. 로그인 토큰 발급, 주식 조회, 게시글 작성, 팔로우, 뉴스피드 조회를 한 화면에서 빠르게 확인할 수 있습니다.
+
+선택 실행
+
+- Jenkins는 기본 Quick Start에서 제외했습니다.
+- 필요하면 `docker compose --profile ops up -d jenkins` 후 `http://localhost:8082`에서 확인할 수 있습니다.
 
 ### 3. 테스트 실행
 

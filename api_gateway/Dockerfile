@@ -6,7 +6,7 @@ RUN chmod +x ./gradlew
 RUN ./gradlew :api_gateway:build -x test --no-daemon
 
 # 실행 단계
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
 RUN apt-get update && apt-get install -y nginx openssl curl
 
