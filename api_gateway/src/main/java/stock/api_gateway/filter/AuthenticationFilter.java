@@ -2,7 +2,6 @@ package stock.api_gateway.filter;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +15,12 @@ import reactor.core.publisher.Mono;
 import org.springframework.http.HttpMethod;
 
 import java.util.Date;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.spec.SecretKeySpec;
 
 @Component
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
@@ -85,7 +89,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     private boolean validateToken(String token) {
         try {
             if (key == null) {
-                key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+                key = new SecretKeySpec(hashSecret(jwtSecret), io.jsonwebtoken.SignatureAlgorithm.HS512.getJcaName());
             }
             Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -103,6 +107,15 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         } catch (Exception e) {
             logger.error("Error validating token", e);
             return false;
+        }
+    }
+
+    private byte[] hashSecret(String secret) {
+        try {
+            return MessageDigest.getInstance("SHA-512")
+                    .digest(secret.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Unable to initialize JWT signing key", e);
         }
     }
 

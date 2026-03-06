@@ -1,7 +1,6 @@
 package stock.user_service.security;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,8 +10,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
+import java.util.UUID;
+
+import javax.crypto.spec.SecretKeySpec;
 
 @Component
 public class JwtTokenProvider {
@@ -24,11 +29,14 @@ public class JwtTokenProvider {
     @Value("${app.jwt.refreshTokenExpirationInMs}")
     private int refreshTokenExpirationInMs;
 
+    @Value("${app.jwt.secret}")
+    private String jwtSecret;
+
     private Key key;
 
     @PostConstruct
     public void init() {
-        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+        this.key = new SecretKeySpec(hashSecret(jwtSecret), SignatureAlgorithm.HS512.getJcaName());
     }
 
     public String generateAccessToken(Authentication authentication) {
@@ -46,10 +54,20 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
+                .setId(UUID.randomUUID().toString())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
+    }
+
+    private byte[] hashSecret(String secret) {
+        try {
+            return MessageDigest.getInstance("SHA-512")
+                    .digest(secret.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Unable to initialize JWT signing key", e);
+        }
     }
 
     public String getUsernameFromJWT(String token) {

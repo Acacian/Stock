@@ -5,11 +5,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.web.client.HttpClientErrorException;
 import stock.user_service.dto.JwtAuthenticationResponse;
 import stock.user_service.dto.UpdateProfileRequest;
 import stock.user_service.model.User;
@@ -17,6 +17,9 @@ import stock.user_service.repository.UserRepository;
 import stock.user_service.service.AuthService;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +38,9 @@ class IntegrationTest {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
     @Value("${test.email}")
     private String testEmail;
 
@@ -44,6 +50,15 @@ class IntegrationTest {
     @BeforeEach
     void setup() {
         userRepository.deleteAll();
+        clearRedisKeys("token:*", "refresh_token:*", "verification:*", "user_tokens:*");
+    }
+
+    private void clearRedisKeys(String... patterns) {
+        Stream.of(patterns)
+            .map(redisTemplate::keys)
+            .filter(Objects::nonNull)
+            .flatMap(Set::stream)
+            .forEach(redisTemplate::delete);
     }
 
     @Test
