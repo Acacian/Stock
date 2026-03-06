@@ -7,32 +7,26 @@
 ![Redis](https://img.shields.io/badge/Redis-Cache_&_Token-DC382D?style=flat-square)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square)
 
-주식 데이터 조회와 커뮤니티 기능을 분리해 설계한 MSA 기반 개인 프로젝트입니다. 인증, 주식 데이터 적재, 소셜 활동, 뉴스피드 생성을 각각 독립 서비스로 나누고 Kafka, Redis, Spring Batch를 이용해 요청 처리와 비동기 후처리를 분리하는 데 초점을 맞췄습니다.
+사용자 인증, 소셜 액션, 뉴스피드 반영, 주식 데이터 적재가 서로를 과도하게 침범하지 않도록 분리한 MSA 개인 프로젝트입니다. 단순히 서비스를 나누는 데서 끝내지 않고, 사용자 행동이 어떤 경로로 처리되고 어떤 방식으로 검증되는지까지 추적 가능한 구조를 만드는 데 집중했습니다.
 
 ## Quick Start
 
-```bash
-cat <<'EOF' > .env
-DB_PASSWORD=<your-db-password>
-DB_NAME=Stock
-JWT_SECRET=<your-jwt-secret>
-SSL_KEY_STORE_PASSWORD=<your-keystore-password>
-EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
-REDIS_HOST=redis
-REDIS_PORT=6379
-APP_DOMAIN=https://localhost
-APP_UPLOAD_DIR=/app/uploads/profile_images
-APP_UPLOAD_URL=https://localhost/uploads
-SENDING_EMAIL=<your-smtp-email>
-EMAIL_PASSWORD=<your-smtp-app-password>
-EOF
+1. 프로젝트 루트에 `.env` 파일을 만들고 아래 값을 채웁니다.
+   `DB_PASSWORD`, `DB_NAME=Stock`, `JWT_SECRET`, `SSL_KEY_STORE_PASSWORD`, `EUREKA_SERVER_URL=http://eureka-server:8761/eureka/`, `REDIS_HOST=redis`, `REDIS_PORT=6379`, `APP_DOMAIN=https://localhost`, `APP_UPLOAD_DIR=/app/uploads/profile_images`, `APP_UPLOAD_URL=https://localhost/uploads`, `SENDING_EMAIL`, `EMAIL_PASSWORD`
+2. 애플리케이션을 기동합니다.
 
+```bash
 docker compose up --build -d
+```
+
+3. 빌드와 테스트를 검증합니다.
+
+```bash
 ./gradlew clean build
 ./gradlew integrationTest
 ```
 
-실행 전 `.env`가 반드시 필요합니다. 예시 값은 위 블록처럼 직접 작성하고, 비밀값은 저장소에 커밋하지 않습니다.
+`.env`는 저장소에 커밋하지 않습니다.
 
 빠르게 확인할 수 있는 주소
 
@@ -40,13 +34,20 @@ docker compose up --build -d
 - Eureka: `http://localhost:8761`
 - Kafka UI: `http://localhost:8080`
 
-## 한눈에 보기
+## 핵심 요약
 
 - 기간: 2024.08.07 - 2024.09.07
 - 형태: 개인 프로젝트
-- 목표: 주식 커뮤니티를 구성하는 인증, 시세 처리, 소셜 이벤트, 뉴스피드 생성을 느슨하게 결합된 서비스로 분리
+- 목표: 인증, 시세 처리, 소셜 이벤트, 뉴스피드 생성을 느슨하게 결합된 흐름으로 재구성
 - 핵심 관심사: 서비스 경계 설계, 이벤트 기반 처리, 캐시 전략, 배치 처리, CI 자동화
-- 검증 방식: `test`와 `integrationTest`를 분리하고 GitHub Actions에서 MySQL, Redis, Kafka 연동까지 확인
+- 검증 방식: `clean build`, `integrationTest`, `docker compose up --build -d`, Verification UI까지 실제로 확인
+
+## 이 프로젝트에서 보여주고 싶은 것
+
+- 문제를 나누는 기준: 인증, 소셜, 뉴스피드, 시세 적재를 변경 이유 기준으로 분리했습니다.
+- 비동기 처리의 책임: 팔로우, 게시글, 댓글, 좋아요는 Kafka 이벤트로 흘려 뉴스피드 생성과 직접 결합하지 않았습니다.
+- 운영 가능한 기본기: GitHub Actions에서 `build`와 `integrationTest`를 분리하고, 로컬 `docker compose` 실행 흐름도 실제로 재현 가능하게 맞췄습니다.
+- 검증 습관: README, CI, 테스트 코드, 실제 실행 경로가 서로 어긋나지 않도록 정리했습니다.
 
 ## 해결하려는 문제
 
@@ -56,6 +57,7 @@ docker compose up --build -d
 - 게시글 작성, 댓글, 좋아요, 팔로우가 뉴스피드 생성 로직과 직접 연결되어 확장성이 떨어지는 문제
 - 주식 시세 적재와 기술 지표 계산 같은 주기성 작업이 API 응답 흐름을 방해하는 문제
 - Refresh Token, 뉴스피드, 반복 조회 데이터가 DB 부하로 이어지는 문제
+- 문서상 Quick Start는 있어도 실제로는 실행이 막히면 포트폴리오 신뢰도가 떨어지는 문제
 
 ## 아키텍처
 
@@ -184,6 +186,7 @@ Refresh Token 저장, 로그아웃 토큰 블랙리스트, 캐시성 조회 데�
 - GitHub Actions 워크플로에는 애플리케이션 비밀값을 넣지 않았습니다.
 - 테스트에 필요한 기본 설정은 각 서비스의 `application-test.yml`에서 관리합니다.
 - 워크플로는 MySQL, Redis, Kafka 서비스 컨테이너를 준비하고 `build`와 `integrationTest`를 수행하는 역할만 담당합니다.
+- 실제 제출 기준에서는 `clean build`가 깨지지 않는 상태와 로컬 실행 문서가 재현 가능한 상태를 함께 맞췄습니다.
 
 워크플로 파일: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
 
@@ -262,6 +265,56 @@ docker compose -f docker-compose.test.yml up --build integration-test
 
 - Redis에 블랙리스트 키를 저장하고 TTL을 토큰 만료 시간과 맞췄습니다.
 - 인증 필터에서 블랙리스트 조회를 추가해 로그아웃 직후 재사용을 차단했습니다.
+
+### CI `clean build`가 구현 변경을 따라가지 못하던 문제
+
+문제
+
+- `NewsfeedService`, `AuthService` 구현은 바뀌었는데 테스트는 이전 시그니처를 그대로 가정하고 있어 `clean build`가 깨졌습니다.
+
+원인
+
+- `newsfeed_service`는 `List<String>` 기반 검증에서 `List<NewsfeedItem>` 기반 검증으로 바뀌었고, `user_service`는 단일 토큰 문자열이 아니라 access/refresh token 응답 객체를 반환하도록 바뀌었습니다.
+- 테스트 코드가 서비스 계약 변경을 따라가지 못하면서 컴파일 단계에서 바로 실패했습니다.
+
+해결
+
+- `newsfeed_service` 테스트를 현재 모델과 직렬화 방식 기준으로 다시 작성했습니다.
+- `user_service` 테스트는 Spring Boot 의존을 줄이고 Mockito 기반 단위 테스트로 정리해 반환 타입과 토큰 저장 흐름을 현재 구현에 맞췄습니다.
+- 테스트 상태 초기화를 위해 `clearAllNewsfeeds()`를 추가하고, 빈 결과 처리도 방어적으로 정리했습니다.
+
+### Quick Start가 실제로는 한 번에 실행되지 않던 문제
+
+문제
+
+- README에는 `docker compose up --build -d`가 적혀 있었지만 실제로는 이미지, healthcheck, 보조 서비스 때문에 기본 실행이 흔들릴 수 있었습니다.
+
+원인
+
+- 런타임 이미지 베이스로 사용하던 `openjdk:17-jdk-slim` 태그가 더 이상 유효하지 않았습니다.
+- 일부 서비스 healthcheck는 실제 노출 엔드포인트와 맞지 않아 컨테이너가 `unhealthy`로 보였습니다.
+- Jenkins가 기본 compose에 포함되어 핵심 검증 경로와 무관한 실패가 Quick Start를 흔들 수 있었습니다.
+
+해결
+
+- 런타임 이미지를 `eclipse-temurin:17-jdk-jammy`로 교체했습니다.
+- 서비스 healthcheck를 실제 기동 상태와 맞는 방식으로 정리했습니다.
+- Jenkins는 `ops` profile로 분리해 기본 Quick Start는 핵심 애플리케이션 검증에만 집중하도록 바꿨습니다.
+
+### CI에 애플리케이션 성격의 값이 섞여 보이던 문제
+
+문제
+
+- 워크플로 파일에 애플리케이션 설정이 직접 들어가 있으면 CI가 테스트 환경 준비를 넘어서 애플리케이션 설정 책임까지 떠안는 구조로 보였습니다.
+
+원인
+
+- 테스트 실행에 필요한 값과 애플리케이션 비밀값의 경계가 분명하지 않았습니다.
+
+해결
+
+- GitHub Actions는 MySQL, Redis, Kafka 준비와 `build`/`integrationTest` 실행만 담당하게 정리했습니다.
+- 테스트에 필요한 기본 설정은 각 서비스의 test profile로 이동시켜 워크플로와 애플리케이션 설정 책임을 분리했습니다.
 
 ## 회고
 

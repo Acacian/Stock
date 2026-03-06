@@ -10,8 +10,8 @@ import stock.newsfeed_service.repository.UserRepository;
 import stock.newsfeed_service.kafka.StockEvent;
 
 import java.util.HashSet;
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -92,9 +92,20 @@ public class NewsfeedService {
     public List<NewsfeedItem> getNewsfeed(Long userId) {
         String key = "newsfeed:" + userId;
         List<String> serializedItems = redisTemplate.opsForList().range(key, 0, 99);
+        if (serializedItems == null || serializedItems.isEmpty()) {
+            return List.of();
+        }
+
         return serializedItems.stream()
                 .map(this::deserializeNewsfeedItem)
                 .collect(Collectors.toList());
+    }
+
+    public void clearAllNewsfeeds() {
+        Set<String> keys = redisTemplate.keys("newsfeed:*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
     }
 
     private String serializeNewsfeedItem(NewsfeedItem item) {
