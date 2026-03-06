@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock BE Check UI</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Backend Verification UI</p>
+      <h1>서비스 연결 상태를 한 화면에서 확인합니다.</h1>
+      <p class="hero-copy">
+        포트폴리오용 정식 프론트가 아니라, auth/social/newsfeed/stock API를 빠르게 검증하기 위한 최소 UI입니다.
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>인증</h2>
+        <form id="login-form" class="stack">
+          <label>
+            <span>Email</span>
+            <input type="email" name="email" placeholder="alice@example.com" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input type="password" name="password" placeholder="password" required>
+          </label>
+          <button type="submit">로그인 토큰 발급</button>
+        </form>
+        <form id="register-form" class="stack compact">
+          <label>
+            <span>Name</span>
+            <input type="text" name="name" placeholder="Alice" required>
+          </label>
+          <label>
+            <span>Email</span>
+            <input type="email" name="email" placeholder="alice@example.com" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input type="password" name="password" placeholder="password" required>
+          </label>
+          <button type="submit" class="secondary">회원가입</button>
+        </form>
+        <label class="stack">
+          <span>Access Token</span>
+          <textarea id="access-token" rows="5" placeholder="로그인 후 자동 저장됩니다."></textarea>
+        </label>
+      </article>
+
+      <article class="panel">
+        <h2>소셜</h2>
+        <form id="post-form" class="stack compact">
+          <label>
+            <span>User ID</span>
+            <input type="number" name="userId" min="1" required>
+          </label>
+          <label>
+            <span>Title</span>
+            <input type="text" name="title" placeholder="Smoke title" required>
+          </label>
+          <label>
+            <span>Content</span>
+            <textarea name="content" rows="3" placeholder="Smoke post" required></textarea>
+          </label>
+          <label>
+            <span>Stock ID</span>
+            <input type="number" name="stockId" min="1" placeholder="선택값">
+          </label>
+          <button type="submit">게시글 생성</button>
+        </form>
+        <form id="follow-form" class="inline">
+          <input type="number" name="followerId" min="1" placeholder="followerId" required>
+          <input type="number" name="followeeId" min="1" placeholder="followeeId" required>
+          <button type="submit" class="secondary">팔로우</button>
+        </form>
+        <form id="comment-form" class="stack compact">
+          <label>
+            <span>Post ID</span>
+            <input type="number" name="postId" min="1" required>
+          </label>
+          <label>
+            <span>User ID</span>
+            <input type="number" name="userId" min="1" required>
+          </label>
+          <label>
+            <span>Comment</span>
+            <input type="text" name="content" placeholder="Nice post" required>
+          </label>
+          <button type="submit" class="secondary">댓글 추가</button>
+        </form>
+        <form id="like-form" class="inline">
+          <input type="number" name="postId" min="1" placeholder="postId" required>
+          <input type="number" name="userId" min="1" placeholder="userId" required>
+          <button type="submit" class="secondary">좋아요</button>
+        </form>
+      </article>
+
+      <article class="panel">
+        <h2>뉴스피드</h2>
+        <form id="newsfeed-form" class="inline">
+          <input type="number" name="userId" min="1" placeholder="userId" required>
+          <button type="submit">조회</button>
+        </form>
+        <pre id="newsfeed-output" class="output">[]</pre>
+      </article>
+
+      <article class="panel">
+        <h2>주식</h2>
+        <div class="stack compact">
+          <button id="stocks-button">주식 5건 조회</button>
+          <pre id="stocks-output" class="output">[]</pre>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel log-panel">
+      <div class="log-head">
+        <h2>요청 로그</h2>
+        <button id="clear-log" class="ghost">비우기</button>
+      </div>
+      <div id="request-log" class="log"></div>
+    </section>
+  </main>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

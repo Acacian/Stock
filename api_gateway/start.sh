@@ -1,4 +1,19 @@
 #!/bin/bash
+set -e
+
+# keystore가 없으면 로컬 실행용 self-signed 인증서를 생성
+if [ ! -f /app/apigateway.p12 ]; then
+  keytool -genkeypair \
+    -alias apigateway \
+    -storetype PKCS12 \
+    -keystore /app/apigateway.p12 \
+    -storepass "${SSL_KEY_STORE_PASSWORD}" \
+    -keypass "${SSL_KEY_STORE_PASSWORD}" \
+    -keyalg RSA \
+    -keysize 2048 \
+    -validity 3650 \
+    -dname "CN=localhost, OU=Stock, O=Stock, L=Seoul, ST=Seoul, C=KR"
+fi
 
 # SSL 인증서 변환 및 권한 설정
 openssl pkcs12 -in /app/apigateway.p12 -out /etc/nginx/ssl/nginx.crt -clcerts -nokeys -password pass:${SSL_KEY_STORE_PASSWORD}

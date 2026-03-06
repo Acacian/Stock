@@ -3,6 +3,7 @@ package stock.api_gateway.config;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +22,18 @@ import stock.api_gateway.filter.RateLimitingFilter;
 @Configuration
 public class GatewayConfig {
 
+    @Value("${app.routes.newsfeed-uri:lb://NEWSFEED-SERVICE}")
+    private String newsfeedServiceUri;
+
+    @Value("${app.routes.social-uri:lb://SOCIAL-SERVICE}")
+    private String socialServiceUri;
+
+    @Value("${app.routes.user-uri:lb://USER-SERVICE}")
+    private String userServiceUri;
+
+    @Value("${app.routes.stock-uri:lb://STOCK-SERVICE}")
+    private String stockServiceUri;
+
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -33,11 +46,11 @@ public class GatewayConfig {
             .route("newsfeed_service", r -> r.path("/api/newsfeed/**")
                 .filters(f -> f.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
                                .filter(rateLimitingFilter))
-                .uri("http://newsfeed-service:8083"))
+                .uri(newsfeedServiceUri))
             .route("social_service", r -> r.path("/api/social/**")
                 .filters(f -> f.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
                                .filter(rateLimitingFilter))
-                .uri("http://social-service:8084"))
+                .uri(socialServiceUri))
             .route("user_service_public", r -> r.path("/api/auth/register", "/api/auth/login", "/api/auth/verify")
             .filters(f -> f
                 .filter((exchange, chain) -> {
@@ -45,19 +58,19 @@ public class GatewayConfig {
                     return chain.filter(exchange);
                 })
                 .filter(rateLimitingFilter))
-                .uri("http://user-service:8086"))
+                .uri(userServiceUri))
             .route("user_service_check", r -> r.path("/api/auth/check")
                 .filters(f -> f.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
                                .filter(rateLimitingFilter))
-                .uri("http://user-service:8086"))
+                .uri(userServiceUri))
             .route("user_service_protected", r -> r.path("/api/auth/**")
                 .filters(f -> f.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
                                .filter(rateLimitingFilter))
-                .uri("http://user-service:8086"))
+                .uri(userServiceUri))
             .route("stock_service", r -> r.path("/api/stocks/**")
                 .filters(f -> f.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
                                .filter(rateLimitingFilter))
-                .uri("http://stock-service:8085"))
+                .uri(stockServiceUri))
             .build();
     }
 

@@ -5,45 +5,6 @@ COPY . .
 RUN chmod +x ./gradlew
 RUN ./gradlew :api_gateway:build -x test --no-daemon
 
-# User Service Frontend 빌드 단계
-FROM node:18 AS user-frontend-build
-WORKDIR /app/user_service/frontend
-COPY user_service/frontend .
-RUN npm install -g npm@latest && \
-    npm install && \
-    npm install --save axios @mui/material @mui/icons-material @emotion/react @emotion/styled \
-                 react-router-dom react-error-boundary@latest recharts lodash @stomp/stompjs && \
-    npm install --save-dev @babel/plugin-proposal-private-property-in-object && \
-    npm run build
-
-# Stock Service Frontend 빌드 단계
-FROM node:18 AS stock-frontend-build
-WORKDIR /app/stock_service/frontend
-COPY stock_service/frontend .
-RUN npm install && \
-    npm install --save axios @mui/material @mui/icons-material @emotion/react @emotion/styled \
-                 react-router-dom react-error-boundary@latest recharts lodash @stomp/stompjs && \
-    npm install --save-dev @babel/plugin-proposal-private-property-in-object && \
-    npm run build
-
-# Social Service Frontend 빌드 단계
-FROM node:18 AS social-frontend-build
-WORKDIR /app/social_service/frontend
-COPY social_service/frontend .
-RUN npm install && \
-    npm install --save axios @mui/material @mui/icons-material @emotion/react @emotion/styled \
-                 react-router-dom react-error-boundary@latest recharts lodash @stomp/stompjs && \
-    npm install --save-dev @babel/plugin-proposal-private-property-in-object && \
-    npm run build
-
-# Newsfeed Service Frontend 빌드 단계
-FROM node:18 AS newsfeed-frontend-build
-WORKDIR /app/newsfeed_service/frontend
-COPY newsfeed_service/frontend .
-RUN npm install && \
-    npm install sockjs-client @stomp/stompjs \
-    npm run build
-
 # 실행 단계
 FROM openjdk:17-jdk-slim
 WORKDIR /app
@@ -55,14 +16,8 @@ RUN groupadd -r nginx && useradd -r -g nginx nginx
 COPY --from=backend-build /app/api_gateway/build/libs/*.jar /app/api_gateway.jar
 COPY api_gateway/nginx.conf /etc/nginx/nginx.conf
 COPY api_gateway/src/main/resources/application.yml /app/api_gateway_application.yml
-COPY api_gateway/src/main/resources/apigateway.p12 /app/
 COPY api_gateway/start.sh /app/start.sh
-
-# Frontend 파일 복사
-COPY --from=user-frontend-build /app/user_service/frontend/build /usr/share/nginx/html/user
-COPY --from=stock-frontend-build /app/stock_service/frontend/build /usr/share/nginx/html/stock
-COPY --from=social-frontend-build /app/social_service/frontend/build /usr/share/nginx/html/social
-COPY --from=newsfeed-frontend-build /app/newsfeed_service/frontend/build /usr/share/nginx/html/newsfeed
+COPY api_gateway/src/main/resources/static/ /usr/share/nginx/html/
 
 RUN mkdir -p /etc/nginx/ssl
 RUN chmod +x /app/start.sh
