@@ -76,7 +76,7 @@ class IntegrationTest {
     
         assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
         assertNotNull(loginResponse.getBody());
-        authToken = loginResponse.getBody().getToken();
+        authToken = loginResponse.getBody().getAccessToken();
         assertNotNull(authToken);
     
         // Verify authentication
@@ -167,7 +167,7 @@ class IntegrationTest {
         ResponseEntity<JwtAuthenticationResponse> loginResponse = restTemplate.postForEntity("/api/auth/login", 
             Map.of("email", testEmail, "password", testPassword), JwtAuthenticationResponse.class);
         assertEquals(200, loginResponse.getStatusCode().value());
-        authToken = loginResponse.getBody().getToken();
+        authToken = loginResponse.getBody().getAccessToken();
     
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + authToken);

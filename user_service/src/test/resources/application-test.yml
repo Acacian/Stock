@@ -6,9 +6,9 @@ spring:
   application:
     name: USER-SERVICE
   datasource:
-    url: jdbc:mysql://${SERVERS:db}:3306/Stock_Test?useSSL=true&serverTimezone=UTC
+    url: jdbc:mysql://${SERVERS:localhost}:3306/Stock_Test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${TEST_DB_PASSWORD}
+    password: ${TEST_DB_PASSWORD:test}
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,13 +17,14 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
   data:
     redis:
-      host: ${REDIS_HOST:redis}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   mail:
     host: smtp.gmail.com
-    username: ${SENDING_EMAIL}
+    username: ${SENDING_EMAIL:test@example.com}
     port: 587
-    password: ${EMAIL_PASSWORD}
+    password: ${EMAIL_PASSWORD:test-password}
     properties:
       mail:
         smtp:
@@ -31,7 +32,7 @@ spring:
           starttls:
             enable: true
   kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9092}
+    bootstrap-servers: ${KAFKA_SERVERS:localhost}:${KAFKA_PORT:9092}
     consumer:
       group-id: ${spring.application.name}-group
       auto-offset-reset: earliest
@@ -54,15 +55,12 @@ spring:
   cache:
     type: redis
     redis:
-      time-to-live: 3600000 # 1 hour
+      time-to-live: 3600000
 
 server:
   port: 8086
   ssl:
-    key-store: classpath:keystore.p12
-    key-store-password: ${SSL_KEY_STORE_PASSWORD}
-    key-store-type: PKCS12
-    key-alias: tomcat
+    enabled: false
 
 logging:
   level:
@@ -71,25 +69,26 @@ logging:
     'stock.user_service.client.NewsfeedServiceClient': DEBUG
 
 app:
-  domain: ${APP_DOMAIN}
+  domain: ${APP_DOMAIN:localhost}
   jwt:
     secret: ${JWT_SECRET:defaultSecretKey}
-    accessTokenExpirationInMs: 900000  # 15분
-    refreshTokenExpirationInMs: 604800000  # 7일
+    accessTokenExpirationInMs: 900000
+    refreshTokenExpirationInMs: 604800000
   upload:
-    dir: ${APP_UPLOAD_DIR}
-    url: ${APP_UPLOAD_URL}
+    dir: ${APP_UPLOAD_DIR:uploads/profile_images}
+    url: ${APP_UPLOAD_URL:http://localhost/uploads/profile_images}
 
 eureka:
   client:
+    enabled: false
     serviceUrl:
-      defaultZone: ${EUREKA_SERVER_URL}
-    fetch-registry: true
-    register-with-eureka: true
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+    fetch-registry: false
+    register-with-eureka: false
   instance:
     preferIpAddress: true
-    securePortEnabled: true
-    nonSecurePortEnabled: false
+    securePortEnabled: false
+    nonSecurePortEnabled: true
 
 feign:
   client:
@@ -119,3 +118,6 @@ resilience4j:
         retryExceptions:
           - org.springframework.web.client.HttpServerErrorException
           - java.io.IOException
+
+test:
+  email: test@example.com

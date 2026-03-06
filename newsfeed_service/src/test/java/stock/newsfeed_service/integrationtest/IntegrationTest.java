@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -16,13 +17,14 @@ import org.testcontainers.utility.DockerImageName;
 import stock.newsfeed_service.NewsfeedServiceApplication;
 import stock.newsfeed_service.kafka.SocialEvent;
 import stock.newsfeed_service.kafka.UserEvent;
+import stock.newsfeed_service.model.NewsfeedItem;
 import stock.newsfeed_service.service.NewsfeedService;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.awaitility.Awaitility.await;
 import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(classes = NewsfeedServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -48,9 +50,25 @@ class IntegrationTest {
     @Autowired
     private KafkaTemplate<String, UserEvent> userKafkaTemplate;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @BeforeEach
     void setUp() {
         newsfeedService.clearAllNewsfeeds();
+
+        jdbcTemplate.execute("DELETE FROM posts");
+        jdbcTemplate.execute("DELETE FROM follows");
+        jdbcTemplate.execute("DELETE FROM users");
+
+        jdbcTemplate.update("INSERT INTO users (id, name, email, password, enabled) VALUES (?, ?, ?, ?, ?)",
+                1L, "Alice", "alice@example.com", "password", true);
+        jdbcTemplate.update("INSERT INTO users (id, name, email, password, enabled) VALUES (?, ?, ?, ?, ?)",
+                4L, "Bob", "bob@example.com", "password", true);
+        jdbcTemplate.update("INSERT INTO users (id, name, email, password, enabled) VALUES (?, ?, ?, ?, ?)",
+                5L, "Carol", "carol@example.com", "password", true);
+        jdbcTemplate.update("INSERT INTO posts (id, user_id, content) VALUES (?, ?, ?)",
+                2L, 5L, "Seed post");
     }
 
     @Test
@@ -59,26 +77,18 @@ class IntegrationTest {
         Long postId = 2L;
         Long commentId = 3L;
 
-        // Test follow event
         userKafkaTemplate.send("user-events", new UserEvent("USER_FOLLOWED", userId, 4L));
-
-        // Test post creation
         socialKafkaTemplate.send("social-events", new SocialEvent("POST_CREATED", userId, postId, null));
-
-        // Test comment creation
         socialKafkaTemplate.send("social-events", new SocialEvent("COMMENT_CREATED", userId, postId, commentId));
-
-        // Test like event
         socialKafkaTemplate.send("social-events", new SocialEvent("POST_LIKED", userId, postId, null));
 
-        // Wait for events to be processed
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            List<String> newsfeed = newsfeedService.getNewsfeed(userId);
+            List<NewsfeedItem> newsfeed = newsfeedService.getNewsfeed(userId);
             assertEquals(4, newsfeed.size());
-            assertTrue(newsfeed.get(0).contains("liked post"));
-            assertTrue(newsfeed.get(1).contains("commented on post"));
-            assertTrue(newsfeed.get(2).contains("created a new post"));
-            assertTrue(newsfeed.get(3).contains("followed User"));
+            assertEquals("LIKE", newsfeed.get(0).getType());
+            assertEquals("COMMENT", newsfeed.get(1).getType());
+            assertEquals("POST", newsfeed.get(2).getType());
+            assertEquals("FOLLOW", newsfeed.get(3).getType());
         });
     }
 }

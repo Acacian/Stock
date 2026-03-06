@@ -60,6 +60,9 @@ app:
     secret: ${JWT_SECRET}
     expirationInMs: 3600000
 
+jwt:
+  secret: ${JWT_SECRET}
+
 resilience4j:
   thread-pool-bulkhead:
     enabled: false
