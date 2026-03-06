@@ -266,11 +266,28 @@ docker compose -f docker-compose.test.yml up --build integration-test
 - Redis에 블랙리스트 키를 저장하고 TTL을 토큰 만료 시간과 맞췄습니다.
 - 인증 필터에서 블랙리스트 조회를 추가해 로그아웃 직후 재사용을 차단했습니다.
 
+### 소셜 이벤트는 발행되는데 뉴스피드에 반영되지 않던 문제
+
+문제
+
+- 팔로우, 게시글 작성, 댓글, 좋아요를 수행해도 `newsfeed_service` 조회 결과가 비어 있거나 일부 이벤트만 반영되는 구간이 있었습니다.
+
+원인
+
+- Kafka 토픽 이름과 consumer 설정이 기본값에 강하게 묶여 있어 로컬/CI 환경에 따라 토픽 준비 상태가 달라질 수 있었습니다.
+- `user_service`, `social_service`, `newsfeed_service`가 주고받는 이벤트 DTO와 엔드포인트 계약이 느슨해서, 이벤트는 발행돼도 소비/반영 경로가 일관되지 않았습니다.
+
+해결
+
+- `app.kafka.topics.user-events`, `social-events`, `stock-events`를 명시적으로 분리하고 `NewTopic` bean으로 토픽 생성 책임을 코드에 포함시켰습니다.
+- `newsfeed_service`에 `AuthEventDto`를 추가하고, `NewsfeedController` 엔드포인트를 producer 쪽 이벤트 타입과 맞춰 정리했습니다.
+- 최종적으로 실제 런타임에서 `follow -> post -> comment -> like -> newsfeed 조회` 흐름을 다시 검증해 이벤트 반영을 확인했습니다.
+
 ### CI `clean build`가 구현 변경을 따라가지 못하던 문제
 
 문제
 
-- `NewsfeedService`, `AuthService` 구현은 바뀌었는데 테스트는 이전 시그니처를 그대로 가정하고 있어 `clean build`가 깨졌습니다.
+- `clean build`가 `newsfeed_service`, `user_service` 테스트 컴파일 단계에서 실패했습니다.
 
 원인
 
@@ -282,39 +299,6 @@ docker compose -f docker-compose.test.yml up --build integration-test
 - `newsfeed_service` 테스트를 현재 모델과 직렬화 방식 기준으로 다시 작성했습니다.
 - `user_service` 테스트는 Spring Boot 의존을 줄이고 Mockito 기반 단위 테스트로 정리해 반환 타입과 토큰 저장 흐름을 현재 구현에 맞췄습니다.
 - 테스트 상태 초기화를 위해 `clearAllNewsfeeds()`를 추가하고, 빈 결과 처리도 방어적으로 정리했습니다.
-
-### Quick Start가 실제로는 한 번에 실행되지 않던 문제
-
-문제
-
-- README에는 `docker compose up --build -d`가 적혀 있었지만 실제로는 이미지, healthcheck, 보조 서비스 때문에 기본 실행이 흔들릴 수 있었습니다.
-
-원인
-
-- 런타임 이미지 베이스로 사용하던 `openjdk:17-jdk-slim` 태그가 더 이상 유효하지 않았습니다.
-- 일부 서비스 healthcheck는 실제 노출 엔드포인트와 맞지 않아 컨테이너가 `unhealthy`로 보였습니다.
-- Jenkins가 기본 compose에 포함되어 핵심 검증 경로와 무관한 실패가 Quick Start를 흔들 수 있었습니다.
-
-해결
-
-- 런타임 이미지를 `eclipse-temurin:17-jdk-jammy`로 교체했습니다.
-- 서비스 healthcheck를 실제 기동 상태와 맞는 방식으로 정리했습니다.
-- Jenkins는 `ops` profile로 분리해 기본 Quick Start는 핵심 애플리케이션 검증에만 집중하도록 바꿨습니다.
-
-### CI에 애플리케이션 성격의 값이 섞여 보이던 문제
-
-문제
-
-- 워크플로 파일에 애플리케이션 설정이 직접 들어가 있으면 CI가 테스트 환경 준비를 넘어서 애플리케이션 설정 책임까지 떠안는 구조로 보였습니다.
-
-원인
-
-- 테스트 실행에 필요한 값과 애플리케이션 비밀값의 경계가 분명하지 않았습니다.
-
-해결
-
-- GitHub Actions는 MySQL, Redis, Kafka 준비와 `build`/`integrationTest` 실행만 담당하게 정리했습니다.
-- 테스트에 필요한 기본 설정은 각 서비스의 test profile로 이동시켜 워크플로와 애플리케이션 설정 책임을 분리했습니다.
 
 ## 회고
 
