@@ -117,8 +117,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    volumes:
-      - ./eureka_server/application.yml:/app/application.yml
 
   api-gateway:
     build:
@@ -153,7 +151,6 @@ services:
     volumes:
       - user-uploads:/app/uploads
       - ./api_gateway/src/main/resources:/app/ssl
-      - ./api_gateway/application.yml:/app/application.yml
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 30s
@@ -171,7 +168,6 @@ services:
       - .env
     volumes:
       - user-uploads:/app/uploads/profile_images
-      - ./user_service/application.yml:/app/application.yml
     environment:
       - SPRING_PROFILES_ACTIVE=${MODE:-prod}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_SERVER_URL}
@@ -205,8 +201,6 @@ services:
       - eureka-server
       - redis
       - kafka
-    volumes:
-      - ./newsfeed_service/application.yml:/app/application.yml
     networks:
       - my-network
     healthcheck:
@@ -231,8 +225,6 @@ services:
       - eureka-server
       - db
       - kafka
-    volumes:
-      - ./social_service/application.yml:/app/application.yml
     networks:
       - my-network
     healthcheck:
@@ -257,8 +249,6 @@ services:
       - eureka-server
       - db
       - kafka
-    volumes:
-      - ./stock_service/application.yml:/app/application.yml
     networks:
       - my-network
     healthcheck:

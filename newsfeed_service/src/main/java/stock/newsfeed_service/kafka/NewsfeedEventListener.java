@@ -10,8 +10,10 @@ public class NewsfeedEventListener {
     @Autowired
     private NewsfeedService newsfeedService;
 
-    @KafkaListener(topics = "user-events", groupId = "newsfeed-service-group", 
-                   containerFactory = "newsfeedKafkaListenerContainerFactory")
+    @KafkaListener(
+            topics = "${app.kafka.topics.user-events:user-events}",
+            containerFactory = "newsfeedKafkaListenerContainerFactory"
+    )
     public void listenUserEvents(UserEvent event) {
         switch (event.getType()) {
             case "USER_FOLLOWED":
@@ -21,8 +23,10 @@ public class NewsfeedEventListener {
         }
     }
 
-    @KafkaListener(topics = "social-events", groupId = "newsfeed-service-group",
-                   containerFactory = "newsfeedKafkaListenerContainerFactory")
+    @KafkaListener(
+            topics = "${app.kafka.topics.social-events:social-events}",
+            containerFactory = "newsfeedKafkaListenerContainerFactory"
+    )
     public void listenSocialEvents(SocialEvent event) {
         switch (event.getType()) {
             case "POST_CREATED":
@@ -38,8 +42,10 @@ public class NewsfeedEventListener {
         }
     }
 
-    @KafkaListener(topics = "stock-events", groupId = "newsfeed-service-group", 
-                   containerFactory = "newsfeedKafkaListenerContainerFactory")
+    @KafkaListener(
+            topics = "${app.kafka.topics.stock-events:stock-events}",
+            containerFactory = "newsfeedKafkaListenerContainerFactory"
+    )
     public void listenStockEvents(StockEvent event) {
         newsfeedService.addStockPriceChangeActivity(event);
     }

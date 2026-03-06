@@ -5,6 +5,9 @@ public class AuthEvent {
     private Long userId;
     private String email;
 
+    public AuthEvent() {
+    }
+
     // Constructor
     public AuthEvent(String type, Long userId) {
         this.type = type;

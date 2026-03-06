@@ -6,25 +6,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.ResourceAccessException;
 import stock.user_service.dto.JwtAuthenticationResponse;
 import stock.user_service.dto.UpdateProfileRequest;
 import stock.user_service.model.User;
 import stock.user_service.repository.UserRepository;
 import stock.user_service.service.AuthService;
 
-import java.net.HttpRetryException;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
+@ActiveProfiles("integration")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext
 class IntegrationTest {
@@ -76,7 +73,7 @@ class IntegrationTest {
     
         assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
         assertNotNull(loginResponse.getBody());
-        authToken = loginResponse.getBody().getToken();
+        authToken = loginResponse.getBody().getAccessToken();
         assertNotNull(authToken);
     
         // Verify authentication
@@ -95,7 +92,7 @@ class IntegrationTest {
         updateRequest.setIntroduction("Updated introduction");
         
         ResponseEntity<User> updateResponse = restTemplate.exchange(
-            "/api/users/" + user.getId(),
+            "/api/auth/users/" + user.getId(),
             HttpMethod.PUT,
             new HttpEntity<>(updateRequest, headers),
             User.class
@@ -131,25 +128,14 @@ class IntegrationTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
         String loginBody = String.format("{\"email\":\"%s\",\"password\":\"%s\"}", uniqueEmail, "wrongpassword");
         HttpEntity<String> loginRequest = new HttpEntity<>(loginBody, headers);
-        
-        try {
-            ResponseEntity<Map<String, String>> loginResponse = restTemplate.exchange(
+
+        ResponseEntity<String> loginResponse = restTemplate.exchange(
                 "/api/auth/login",
                 HttpMethod.POST,
                 loginRequest,
-                new ParameterizedTypeReference<Map<String, String>>() {}
-            );
-            assertEquals(HttpStatus.UNAUTHORIZED, loginResponse.getStatusCode());
-        } catch (HttpClientErrorException e) {
-            assertEquals(HttpStatus.UNAUTHORIZED, e.getStatusCode());
-        } catch (ResourceAccessException e) {
-            if (e.getCause() instanceof HttpRetryException) {
-                HttpRetryException hre = (HttpRetryException) e.getCause();
-                assertEquals(401, hre.responseCode());
-            } else {
-                fail("Unexpected exception: " + e.getMessage());
-            }
-        }
+                String.class
+        );
+        assertEquals(HttpStatus.UNAUTHORIZED, loginResponse.getStatusCode());
     }
 
     @Test
@@ -167,7 +153,7 @@ class IntegrationTest {
         ResponseEntity<JwtAuthenticationResponse> loginResponse = restTemplate.postForEntity("/api/auth/login", 
             Map.of("email", testEmail, "password", testPassword), JwtAuthenticationResponse.class);
         assertEquals(200, loginResponse.getStatusCode().value());
-        authToken = loginResponse.getBody().getToken();
+        authToken = loginResponse.getBody().getAccessToken();
     
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + authToken);
@@ -186,6 +172,7 @@ class IntegrationTest {
         User user = new User();
         user.setEmail("test@example.com");
         user.setName("Test User");
+        user.setPassword("password123");
         user.setEnabled(true);
         user.setIntroduction("This is a test user.");
         userRepository.save(user);

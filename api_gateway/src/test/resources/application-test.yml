@@ -1,55 +1,21 @@
 server:
   port: 8081
+  ssl:
+    enabled: false
 
 spring:
   main:
     allow-bean-definition-overriding: true
   application:
     name: API-GATEWAY
-  cloud:
-    gateway:
-      routes:
-        - id: newsfeed_service
-          uri: lb://NEWSFEED-SERVICE
-          predicates:
-            - Path=/api/newsfeed/**
-          filters:
-            - AuthenticationFilter
-            - RateLimitingFilter
-        - id: social_service
-          uri: lb://SOCIAL-SERVICE
-          predicates:
-            - Path=/api/social/**
-          filters:
-            - AuthenticationFilter
-            - RateLimitingFilter
-        - id: user_service
-          uri: lb://USER-SERVICE
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - RateLimitingFilter
-        - id: user_service_protected
-          uri: lb://USER-SERVICE
-          predicates:
-            - Path=/api/auth/check, /api/auth/logout, /api/auth/password, /api/auth/users/**
-          filters:
-            - AuthenticationFilter
-            - RateLimitingFilter
-        - id: stock_service
-          uri: lb://STOCK-SERVICE
-          predicates:
-            - Path=/api/stocks/**
-          filters:
-            - AuthenticationFilter
-            - RateLimitingFilter
 
 eureka:
   client:
+    enabled: false
     serviceUrl:
-      defaultZone: ${EUREKA_SERVER_URL}
-    fetch-registry: true
-    register-with-eureka: true
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+    fetch-registry: false
+    register-with-eureka: false
   instance:
     preferIpAddress: true
 
@@ -57,7 +23,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: '*'
   health:
     circuitbreakers:
       enabled: true
@@ -66,8 +32,11 @@ management:
 
 app:
   jwt:
-    secret: ${JWT_SECRET}
+    secret: test-gateway-jwt-secret-for-local-and-ci-only-123456
     expirationInMs: 3600000
+
+jwt:
+  secret: test-gateway-jwt-secret-for-local-and-ci-only-123456
 
 resilience4j:
   thread-pool-bulkhead:

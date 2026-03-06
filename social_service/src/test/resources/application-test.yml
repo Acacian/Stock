@@ -1,22 +1,26 @@
 spring:
   main:
     allow-bean-definition-overriding: true
-  config:
-    import: optional:file:.env[.properties]
   application:
     name: SOCIAL-SERVICE
   datasource:
-    url: jdbc:mysql://${SERVERS:db}:3306/Stock_Test
-    username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${TEST_DB_PASSWORD}
+    url: jdbc:h2:mem:social_service_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
   kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:kafka}:${KAFKA_PORT:9092}
+    bootstrap-servers: localhost:9092
     consumer:
       group-id: ${spring.application.name}-group
       auto-offset-reset: earliest
@@ -25,7 +29,9 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     listener:
       ack-mode: MANUAL_IMMEDIATE
+      auto-startup: false
     streams:
+      auto-startup: false
       application-id: ${spring.application.name}-streams
       properties:
         default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
@@ -47,12 +53,17 @@ logging:
     '[stock.social]': DEBUG
     'stock.social_service.client.NewsfeedServiceClient': DEBUG
 
+app:
+  chat:
+    redis-listener-enabled: false
+
 eureka:
   client:
+    enabled: false
     serviceUrl:
-      defaultZone: ${EUREKA_SERVER_URL}
-    fetch-registry: true
-    register-with-eureka: true
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: false
+    register-with-eureka: false
   instance:
     preferIpAddress: true
 

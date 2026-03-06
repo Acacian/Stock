@@ -4,25 +4,24 @@ spring:
   application:
     name: STOCK-SERVICE
   datasource:
-    url: jdbc:h2:mem:stock_service_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:mysql://${SERVERS:localhost}:3306/Stock_Test_Stock?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${TEST_DB_PASSWORD:test}
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.MySQLDialect
         jdbc:
           batch_size: 50
   data:
     redis:
-      host: localhost
-      port: 6379
-      password:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_SERVERS:localhost}:${KAFKA_PORT:9092}
     consumer:
       group-id: ${spring.application.name}-group
       auto-offset-reset: earliest
@@ -31,9 +30,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     listener:
       ack-mode: MANUAL_IMMEDIATE
-      auto-startup: false
     streams:
-      auto-startup: false
       application-id: ${spring.application.name}-streams
       properties:
         default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
@@ -50,8 +47,6 @@ spring:
       static-locations: classpath:/static/,file:/app/static/
   mvc:
     throw-exception-if-no-handler-found: true
-  cache:
-    type: simple
   batch:
     job:
       enabled: false
@@ -71,7 +66,7 @@ eureka:
   client:
     enabled: false
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
     fetch-registry: false
     register-with-eureka: false
   instance:

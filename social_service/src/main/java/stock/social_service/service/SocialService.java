@@ -4,10 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.InternalServerErrorException;
+import org.springframework.web.server.ResponseStatusException;
 import stock.social_service.model.Post;
 import stock.social_service.model.Comment;
 import stock.social_service.model.Follow;
@@ -50,10 +49,10 @@ public class SocialService {
             newsfeedServiceClient.postCreated(new SocialEvent("POST_CREATED", userId, savedPost.getId(), null));
             return savedPost;
         } catch (DataIntegrityViolationException e) {
-            throw new BadRequestException("Invalid post data: " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid post data", e);
         } catch (Exception e) {
             logger.error("Error creating post: ", e);
-            throw new InternalServerErrorException("An error occurred while creating the post");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while creating the post", e);
         }
     }
 
@@ -70,7 +69,7 @@ public class SocialService {
         post.getComments().add(savedComment);
         postRepository.save(post);
 
-        newsfeedServiceClient.commentCreated(new SocialEvent("COMMENT_ADDED", userId, postId, savedComment.getId()));
+        newsfeedServiceClient.commentCreated(new SocialEvent("COMMENT_CREATED", userId, postId, savedComment.getId()));
         return savedComment;
     }
 

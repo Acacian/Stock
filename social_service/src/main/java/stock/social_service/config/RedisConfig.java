@@ -2,6 +2,7 @@ package stock.social_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
@@ -24,6 +25,7 @@ public class RedisConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "app.chat.redis-listener-enabled", havingValue = "true", matchIfMissing = true)
     RedisMessageListenerContainer redisContainer(RedisConnectionFactory connectionFactory, 
                                                  MessageListenerAdapter listenerAdapter) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();

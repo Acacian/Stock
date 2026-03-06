@@ -101,7 +101,7 @@ public class AuthService {
         user.setEnabled(false);
         User savedUser = userRepository.save(user);
 
-        if (!"test".equals(activeProfile)) {
+        if (!"test".equals(activeProfile) && !"integration".equals(activeProfile)) {
             String token = generateVerificationToken();
             redisTemplate.opsForValue().set("verification:" + token, savedUser.getEmail(), 24, TimeUnit.HOURS);
             emailService.sendVerificationEmail(savedUser.getEmail(), token);

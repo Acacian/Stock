@@ -1,5 +1,7 @@
 package stock.social_service.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,12 +31,15 @@ public class Post {
 
     @ManyToOne
     @JoinColumn(name = "parent_id")
+    @JsonBackReference("post-replies")
     private Post parent;
 
     @OneToMany(mappedBy = "parent")
+    @JsonManagedReference("post-replies")
     private List<Post> replies = new ArrayList<>();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("post-comments")
     private List<Comment> comments = new ArrayList<>();
 
     @ElementCollection
